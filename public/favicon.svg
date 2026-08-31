@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#DFBA6E" />
+      <stop offset="50%" stop-color="#C5A059" />
+      <stop offset="100%" stop-color="#9E7A36" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Arch (Stem) -->
+  <path
+    d="M 12 112 C 10 50, 42 6, 88 16"
+    stroke="url(#gold-grad)"
+    stroke-width="5"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- Dome Shade (Hemisphere) -->
+  <path
+    d="M 50 56 A 34 34 0 0 1 116 56 Z"
+    stroke="url(#gold-grad)"
+    stroke-width="5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+    fill="none"
+  />
+</svg>

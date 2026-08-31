@@ -23,11 +23,11 @@ export const Footer: React.FC<FooterProps> = ({
           
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
-            <Link to="/" className="flex flex-col inline-block group">
-              <span className="font-serif-luxury text-2xl tracking-[0.25em] font-semibold text-white group-hover:text-[#C5A059] transition-colors uppercase">
+            <Link to="/" className="inline-flex flex-col group">
+              <span className="font-serif-luxury text-2xl tracking-[0.25em] font-semibold text-white group-hover:text-[#C5A059] transition-colors uppercase leading-none">
                 {settings.brandName || 'LUMEN'}
               </span>
-              <span className="text-[9px] tracking-[0.4em] text-[#C5A059] uppercase -mt-1 font-light">
+              <span className="text-[9px] tracking-[0.4em] text-[#C5A059] uppercase mt-1 font-light leading-none">
                 {settings.brandTagline || "ATELIER D'ART"}
               </span>
             </Link>
