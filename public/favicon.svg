@@ -1,26 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
-  <defs>
-    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#DFBA6E" />
-      <stop offset="50%" stop-color="#C5A059" />
-      <stop offset="100%" stop-color="#9E7A36" />
-    </linearGradient>
-  </defs>
-  
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 700" fill="none">
   <!-- Outer Arch (Stem) -->
   <path
-    d="M 12 112 C 10 50, 42 6, 88 16"
-    stroke="url(#gold-grad)"
-    stroke-width="5"
+    d="M 95 665 C 25 500 20 230 145 110 C 215 42 320 18 495 85"
+    stroke="#C59B51"
+    stroke-width="32"
     stroke-linecap="round"
     fill="none"
   />
 
-  <!-- Dome Shade (Hemisphere) -->
+  <!-- Dome Lamp Shade (Hemisphere with flat bottom) -->
   <path
-    d="M 50 56 A 34 34 0 0 1 116 56 Z"
-    stroke="url(#gold-grad)"
-    stroke-width="5"
+    d="M 275 335 L 690 335 C 690 195 595 85 482 85 C 370 85 275 195 275 335 Z"
+    stroke="#C59B51"
+    stroke-width="32"
     stroke-linejoin="round"
     stroke-linecap="round"
     fill="none"

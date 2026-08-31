@@ -68,7 +68,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         if (!matchName && !matchDesc && !matchMat) return false;
       }
       // In stock filter
-      if (onlyInStock && p.stockStatus === 'out_of_stock') {
+      if (onlyInStock && (p.stockStatus === 'out_of_stock' || (typeof p.stockQuantity === 'number' && p.stockQuantity <= 0))) {
         return false;
       }
       return true;

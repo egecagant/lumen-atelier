@@ -26,6 +26,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     ? product.images
     : ['https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=800&q=80'];
 
+  const isOutOfStock = product.stockStatus === 'out_of_stock' || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0);
   const hasMultipleImages = images.length > 1;
   const currentImage = images[currentImageIndex] || images[0];
   const productSlug = getProductSlug(product);
@@ -46,7 +47,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (product.stockStatus === 'out_of_stock') return;
+    if (isOutOfStock) return;
     addToCart(product, 1);
     setAddedAnimation(true);
     setTimeout(() => setAddedAnimation(false), 1500);
@@ -72,7 +73,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     <div
       id={`product-card-${product.id}`}
       onClick={handleCardClick}
-      className="group relative flex flex-col bento-card rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
+      className={`group relative flex flex-col bento-card rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 ${
+        isOutOfStock ? 'opacity-85' : ''
+      }`}
     >
       {/* Product Image Frame */}
       <div className="relative w-full aspect-[4/5] bg-black/50 overflow-hidden">
@@ -80,7 +83,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <img
           src={currentImage}
           alt={product.name}
-          className="w-full h-full object-cover object-center"
+          className={`w-full h-full object-cover object-center transition-all duration-300 ${
+            isOutOfStock ? 'grayscale opacity-75 contrast-125' : ''
+          }`}
         />
 
         {/* Ambient Dark Gradient */}
@@ -125,22 +130,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Status Badges */}
         <div className="absolute top-2 left-2 sm:top-3.5 sm:left-3.5 z-10 flex flex-col gap-1 pointer-events-none">
-          {product.stockStatus === 'out_of_stock' && (
-            <span className="bg-black/85 text-zinc-400 border border-zinc-700/80 text-[8px] sm:text-[10px] uppercase tracking-wider px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium backdrop-blur-md">
+          {isOutOfStock && (
+            <span className="bg-black/90 text-zinc-300 border border-zinc-700 text-[8px] sm:text-[10px] uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-bold backdrop-blur-md shadow-lg">
               {settings.productCardOutOfStockText || 'Tükendi'}
             </span>
           )}
-          {product.stockStatus === 'preorder' && (
+          {!isOutOfStock && product.stockStatus === 'preorder' && (
             <span className="bg-amber-950/85 text-amber-300 border border-amber-800/60 text-[8px] sm:text-[10px] uppercase tracking-wider px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium backdrop-blur-md">
               {settings.productCardPreorderText || 'Ön Sipariş'}
             </span>
           )}
-          {product.isNewArrival && (
+          {!isOutOfStock && product.isNewArrival && (
             <span className="bg-[#C5A059] text-black text-[8px] sm:text-[10px] uppercase tracking-wider px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-bold shadow-md">
               {settings.productCardNewArrivalText || 'Yeni Seri'}
             </span>
           )}
-          {product.featured && (
+          {!isOutOfStock && product.featured && (
             <span className="bg-black/75 text-[#C5A059] border border-[#C5A059]/40 text-[8px] sm:text-[10px] uppercase tracking-wider px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium backdrop-blur-md inline-flex items-center gap-0.5 sm:gap-1">
               <Sparkles className="w-2 sm:w-2.5 h-2 sm:h-2.5 text-[#C5A059]" /> Özel
             </span>
@@ -175,16 +180,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <button
             id={`quick-add-btn-${product.id}`}
             onClick={handleAddToCart}
-            disabled={product.stockStatus === 'out_of_stock'}
+            disabled={isOutOfStock}
             className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-              product.stockStatus === 'out_of_stock'
-                ? 'bg-zinc-800/80 text-zinc-500 cursor-not-allowed border border-zinc-700'
+              isOutOfStock
+                ? 'bg-zinc-800/90 text-zinc-500 cursor-not-allowed border border-zinc-700 pointer-events-none'
                 : addedAnimation
                 ? 'bg-emerald-600 text-white shadow-md'
                 : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-md'
             }`}
           >
-            {addedAnimation ? (
+            {isOutOfStock ? (
+              <span>Tükendi</span>
+            ) : addedAnimation ? (
               <>
                 <Check className="w-3.5 h-3.5" />
                 <span>{settings.productCardAddedBtnText || 'Eklendi'}</span>
@@ -208,7 +215,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </span>
 
           {/* Title */}
-          <h3 className="font-serif-luxury text-sm sm:text-base lg:text-lg text-zinc-100 sm:group-hover:text-[#C5A059] transition-colors leading-snug line-clamp-1 sm:line-clamp-2">
+          <h3 className={`font-serif-luxury text-sm sm:text-base lg:text-lg transition-colors leading-snug line-clamp-1 sm:line-clamp-2 ${
+            isOutOfStock ? 'text-zinc-400' : 'text-zinc-100 sm:group-hover:text-[#C5A059]'
+          }`}>
             {product.name}
           </h3>
 
@@ -224,10 +233,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           ) : null}
         </div>
 
-        {/* Price & Stock info / Mobile Fast Action */}
+        {/* Price & Fast Action */}
         <div className="pt-2 sm:pt-3 border-t border-white/5 flex items-center justify-between gap-1.5">
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-            <span className="font-semibold text-xs sm:text-base lg:text-lg text-white tracking-tight">
+            <span className={`font-semibold text-xs sm:text-base lg:text-lg tracking-tight ${isOutOfStock ? 'text-zinc-400' : 'text-white'}`}>
               {formatCurrency(product.price)}
             </span>
             {!!(product.compareAtPrice && product.compareAtPrice > product.price) && (
@@ -237,31 +246,30 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1">
-            {/* Desktop Stock badge */}
-            <span className="hidden md:inline-block text-[10px] text-zinc-400 uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
-              {product.stockStatus === 'in_stock' ? `${product.stockQuantity || 'Var'} Stok` : 'Özel Seri'}
-            </span>
-
-            {/* Mobile Direct Add to Cart Quick Button */}
-            <button
-              onClick={handleAddToCart}
-              disabled={product.stockStatus === 'out_of_stock'}
-              aria-label="Sepete Ekle"
-              className={`sm:hidden p-2 rounded-lg transition-all flex items-center justify-center ${
-                product.stockStatus === 'out_of_stock'
-                  ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
-                  : addedAnimation
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-[#C5A059] active:bg-[#d6b26b] text-black'
-              }`}
-            >
-              {addedAnimation ? (
-                <Check className="w-3.5 h-3.5" />
-              ) : (
-                <ShoppingBag className="w-3.5 h-3.5" />
-              )}
-            </button>
+          <div className="flex items-center gap-1.5">
+            {isOutOfStock ? (
+              <span className="text-[10px] sm:text-xs text-zinc-400 font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                Tükendi
+              </span>
+            ) : (
+              /* Mobile Direct Add to Cart Quick Button */
+              <button
+                onClick={handleAddToCart}
+                disabled={isOutOfStock}
+                aria-label="Sepete Ekle"
+                className={`sm:hidden p-2 rounded-lg transition-all flex items-center justify-center ${
+                  addedAnimation
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-[#C5A059] active:bg-[#d6b26b] text-black'
+                }`}
+              >
+                {addedAnimation ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : (
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

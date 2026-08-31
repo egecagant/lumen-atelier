@@ -44,6 +44,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   if (!product) return null;
 
+  const isOutOfStock = product.stockStatus === 'out_of_stock' || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0);
   const productSlug = getProductSlug(product);
 
   const handleGoToFullPage = () => {
@@ -59,7 +60,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const isFavorite = isWishlisted(product.id);
 
   const handleAddToCart = () => {
-    if (product.stockStatus === 'out_of_stock') return;
+    if (isOutOfStock) return;
     addToCart(product, quantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -93,7 +94,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <img
               src={currentImage}
               alt={product.name}
-              className="w-full h-full object-cover object-center"
+              className={`w-full h-full object-cover object-center transition-all duration-300 ${
+                isOutOfStock ? 'grayscale opacity-75 contrast-125' : ''
+              }`}
             />
 
             {/* Navigation Arrows for Modal (Same clean style as product cards) */}
@@ -121,6 +124,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <span className="glass-panel text-[#C5A059] text-[10px] uppercase tracking-widest px-3 py-1 rounded-full font-semibold border border-[#C5A059]/30">
                 {product.categoryName || 'Lüks Aydınlatma'}
               </span>
+              {isOutOfStock && (
+                <span className="bg-black/90 text-zinc-300 border border-zinc-700 text-[10px] uppercase tracking-widest px-3 py-1 rounded-full font-bold backdrop-blur-md shadow-lg">
+                  {settings.productCardOutOfStockText || 'Tükendi'}
+                </span>
+              )}
             </div>
           </div>
 
@@ -135,7 +143,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     idx === selectedImageIdx
                       ? 'border-[#C5A059] ring-1 ring-[#C5A059]'
                       : 'border-white/10 opacity-60 hover:opacity-100'
-                  }`}
+                  } ${isOutOfStock ? 'grayscale' : ''}`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover object-center" />
                 </button>
@@ -264,14 +272,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-1">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  disabled={isOutOfStock}
+                  className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   -
                 </button>
                 <span className="w-8 text-center text-sm font-semibold">{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  disabled={isOutOfStock}
+                  className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
                   +
                 </button>
@@ -281,16 +291,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <button
                 id="modal-add-to-cart-btn"
                 onClick={handleAddToCart}
-                disabled={product.stockStatus === 'out_of_stock'}
+                disabled={isOutOfStock}
                 className={`flex-1 py-3.5 px-6 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                  product.stockStatus === 'out_of_stock'
-                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/10'
+                  isOutOfStock
+                    ? 'bg-zinc-800/90 text-zinc-500 cursor-not-allowed border border-white/10'
                     : added
                     ? 'bg-emerald-600 text-white'
                     : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-md'
                 }`}
               >
-                {added ? (
+                {isOutOfStock ? (
+                  <span>Tükendi</span>
+                ) : added ? (
                   <>
                     <Check className="w-4 h-4" />
                     <span>Sepete Eklendi</span>
@@ -304,7 +316,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </button>
             </div>
 
-            {onInstantCheckout && product.stockStatus !== 'out_of_stock' && (
+            {onInstantCheckout && !isOutOfStock && (
               <button
                 onClick={() => {
                   onClose();

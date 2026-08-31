@@ -83,10 +83,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     );
   }
 
-  const category = categories.find(c => c.id === product.categoryId);
-  const isFavorite = isWishlisted(product.id);
+  const isOutOfStock = product ? (product.stockStatus === 'out_of_stock' || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)) : false;
+  const category = categories.find(c => c.id === product?.categoryId);
+  const isFavorite = product ? isWishlisted(product.id) : false;
 
-  const images = product.images && product.images.length > 0
+  const images = product?.images && product.images.length > 0
     ? product.images
     : ['https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1200&q=80'];
 
@@ -94,11 +95,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   // Related products from the same category
   const relatedProducts = products
-    .filter(p => p.id !== product.id && (p.categoryId === product.categoryId || !product.categoryId))
+    .filter(p => p.id !== product?.id && (p.categoryId === product?.categoryId || !product?.categoryId))
     .slice(0, 4);
 
   const handleAddToCart = () => {
-    if (product.stockStatus === 'out_of_stock') return;
+    if (!product || isOutOfStock) return;
     addToCart(product, quantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -167,7 +168,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <img
                   src={currentImage}
                   alt={product.name}
-                  className="w-full h-full object-cover object-center"
+                  className={`w-full h-full object-cover object-center transition-all duration-300 ${
+                    isOutOfStock ? 'grayscale opacity-75 contrast-125' : ''
+                  }`}
                 />
 
                 {/* Subtle Ambient Vignette */}
@@ -198,7 +201,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <span className="glass-panel text-[#C5A059] text-xs uppercase tracking-widest px-3 py-1 rounded-full font-semibold border border-[#C5A059]/40 shadow-lg">
                     {product.categoryName || 'Lüks Koleksiyon'}
                   </span>
-                  {product.isNewArrival && (
+                  {isOutOfStock && (
+                    <span className="bg-black/90 text-zinc-300 border border-zinc-700 text-xs uppercase tracking-widest px-3 py-1 rounded-full font-bold shadow-lg">
+                      Tükendi
+                    </span>
+                  )}
+                  {!isOutOfStock && product.isNewArrival && (
                     <span className="bg-[#C5A059] text-black text-xs uppercase tracking-widest px-3 py-1 rounded-full font-bold shadow-md w-[100px] text-center inline-block">
                       Yeni Seri
                     </span>
@@ -217,7 +225,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                         idx === selectedImageIdx
                           ? 'border-[#C5A059] ring-2 ring-[#C5A059]/50'
                           : 'border-white/10 opacity-60 hover:opacity-100 hover:border-white/30'
-                      }`}
+                      } ${isOutOfStock ? 'grayscale' : ''}`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover object-center" />
                     </button>
@@ -287,9 +295,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </span>
                 </div>
 
-                <span className="text-xs px-3 py-1 rounded-full font-medium bg-white/5 border border-white/10 text-zinc-300">
-                  {product.stockStatus === 'in_stock' ? `${product.stockQuantity || 'Stokta'} Adet Mevcut` : 'Özel Seri Siparişi'}
-                </span>
+                {isOutOfStock ? (
+                  <span className="text-xs px-3 py-1 rounded-full font-medium bg-red-950/60 border border-red-800/60 text-red-300">
+                    Tükendi
+                  </span>
+                ) : (
+                  <span className="text-xs px-3 py-1 rounded-full font-medium bg-white/5 border border-white/10 text-zinc-300">
+                    Stokta Mevcut
+                  </span>
+                )}
               </div>
 
               {/* Purchase Actions */}
@@ -299,14 +313,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <div className="flex items-center bg-black/60 border border-white/15 rounded-2xl p-1.5">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors text-lg"
+                      disabled={isOutOfStock}
+                      className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
                     >
                       -
                     </button>
                     <span className="w-10 text-center font-bold text-sm">{quantity}</span>
                     <button
                       onClick={() => setQuantity(quantity + 1)}
-                      className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors text-lg"
+                      disabled={isOutOfStock}
+                      className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
                     >
                       +
                     </button>
@@ -316,16 +332,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <button
                     id="page-add-to-cart-btn"
                     onClick={handleAddToCart}
-                    disabled={product.stockStatus === 'out_of_stock'}
+                    disabled={isOutOfStock}
                     className={`flex-1 py-4 px-6 rounded-2xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                      product.stockStatus === 'out_of_stock'
-                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/10'
+                      isOutOfStock
+                        ? 'bg-zinc-800/90 text-zinc-500 cursor-not-allowed border border-white/10'
                         : added
                         ? 'bg-emerald-600 text-white'
                         : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-md hover:scale-[1.01]'
                     }`}
                   >
-                    {added ? (
+                    {isOutOfStock ? (
+                      <span>Tükendi</span>
+                    ) : added ? (
                       <>
                         <Check className="w-5 h-5" />
                         <span>Sepete Eklendi</span>
@@ -340,7 +358,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 </div>
 
                 {/* Instant Checkout Button */}
-                {product.stockStatus !== 'out_of_stock' && (
+                {!isOutOfStock && (
                   <button
                     onClick={() => onInstantBuy(product, quantity)}
                     className="w-full py-4 glass-panel hover:bg-white/10 text-[#C5A059] border border-[#C5A059]/50 hover:border-[#C5A059] rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md"
