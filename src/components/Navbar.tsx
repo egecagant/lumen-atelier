@@ -409,7 +409,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="cart-drawer-trigger-btn"
               onClick={() => setIsCartOpen(true)}
-              className="relative p-2 text-white glass-panel hover:border-[#C5A059] hover:text-[#C5A059] transition-all rounded-full"
+              className="relative p-2 text-zinc-300 hover:text-[#C5A059] transition-colors rounded-full hover:bg-white/5"
               aria-label="Sepetim"
               title="Alışveriş Sepeti"
             >
