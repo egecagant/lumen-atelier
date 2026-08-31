@@ -1,0 +1,220 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #0A0A0A;
+    color: #F4F4F5;
+  }
+
+  h1, h2, h3, .font-serif-luxury {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+}
+
+/* Bento Grid & Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-card {
+  background: rgba(20, 20, 24, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+}
+
+/* Mouse Hover Effects - ONLY active on devices with a fine pointer (Mouse / Trackpad) */
+@media (hover: hover) and (pointer: fine) {
+  .bento-card {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bento-card:hover {
+    border-color: rgba(197, 160, 89, 0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.8);
+  }
+
+  .glass-panel-hover:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(197, 160, 89, 0.4);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Mobile & Touch Devices - Completely remove sticky hover borders, transforms and glow */
+@media (hover: none), (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .bento-card,
+  .glass-panel,
+  .glass-panel-hover {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .bento-card:hover,
+  .glass-panel:hover,
+  .glass-panel-hover:hover {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    transform: none !important;
+    box-shadow: none !important;
+    background: inherit;
+  }
+
+  /* Prevent sticky yellow hover borders on touch tap */
+  .group:hover {
+    border-color: inherit;
+  }
+
+  /* Keep active state clean without persisting */
+  button:active,
+  a:active {
+    opacity: 0.85;
+  }
+}
+
+.bento-accent-gold {
+  color: #C5A059;
+}
+
+.bento-bg-gold {
+  background-color: #C5A059;
+}
+
+.bento-border-gold {
+  border-color: #C5A059;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C5A059;
+}
+
+/* Crisp Matte Shadow Utilities */
+.shadow-matte {
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.85);
+}
+
+.shadow-matte-sm {
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.75);
+}
+
+/* Announcement Bar Animation Effects */
+@keyframes announcement-marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-slow {
+  display: flex;
+  width: max-content;
+  animation: announcement-marquee-scroll 34s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-normal {
+  display: flex;
+  width: max-content;
+  animation: announcement-marquee-scroll 22s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-fast {
+  display: flex;
+  width: max-content;
+  animation: announcement-marquee-scroll 13s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-slow:hover,
+.animate-marquee-normal:hover,
+.animate-marquee-fast:hover {
+  animation-play-state: paused;
+}
+
+@keyframes announcement-pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 0px transparent);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.985);
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+}
+
+.animate-announcement-pulse-slow {
+  animation: announcement-pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-announcement-pulse-normal {
+  animation: announcement-pulse-glow 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-announcement-pulse-fast {
+  animation: announcement-pulse-glow 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes announcement-shimmer-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-announcement-shimmer {
+  background: linear-gradient(90deg, currentColor 0%, #FFFFFF 50%, currentColor 100%);
+  background-size: 200% auto;
+  color: transparent !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: announcement-shimmer-sweep 2.8s linear infinite;
+}
+
+@keyframes announcement-soft-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-announcement-float {
+  animation: announcement-soft-float 2.2s ease-in-out infinite;
+}
+

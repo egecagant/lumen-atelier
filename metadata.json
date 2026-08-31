@@ -1,0 +1,6 @@
+{
+  "name": "LUMEN Atelier - Lüks Tasarım Lambalar",
+  "description": "Lüks tasarım lambalar ve aydınlatma koleksiyonları e-ticaret platformu ve dinamik yönetim paneli.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
