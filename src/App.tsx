@@ -120,7 +120,9 @@ function MainApp() {
 
   // Firestore Real-time Collections State with instant local cache
   const [products, setProducts] = useState<Product[]>(loadCachedProducts);
+  const [productsLoading, setProductsLoading] = useState<boolean>(() => loadCachedProducts().length === 0);
   const [categories, setCategories] = useState<Category[]>(loadCachedCategories);
+  const [categoriesLoading, setCategoriesLoading] = useState<boolean>(() => loadCachedCategories().length === 0);
   const [banners, setBanners] = useState<HeroBanner[]>(loadCachedBanners);
   const [bannersLoading, setBannersLoading] = useState<boolean>(() => loadCachedBanners().length === 0);
   const [orders, setOrders] = useState<Order[]>(loadCachedOrders);
@@ -144,6 +146,7 @@ function MainApp() {
         });
         const sorted = prods.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setProducts(sorted);
+        setProductsLoading(false);
         try {
           localStorage.setItem('lumen_products_backup', JSON.stringify(sorted));
         } catch (err) {
@@ -151,10 +154,12 @@ function MainApp() {
         }
       }, (error) => {
         console.warn('Products onSnapshot error:', error);
+        setProductsLoading(false);
       });
       return () => unsubscribe();
     } catch (e) {
       console.warn('Products subscription fallback:', e);
+      setProductsLoading(false);
     }
   }, []);
 
@@ -169,6 +174,7 @@ function MainApp() {
         });
         const sorted = cats.sort((a, b) => (a.order || 0) - (b.order || 0));
         setCategories(sorted);
+        setCategoriesLoading(false);
         try {
           localStorage.setItem('lumen_categories_backup', JSON.stringify(sorted));
         } catch (err) {
@@ -176,10 +182,12 @@ function MainApp() {
         }
       }, (error) => {
         console.warn('Categories onSnapshot error:', error);
+        setCategoriesLoading(false);
       });
       return () => unsubscribe();
     } catch (e) {
       console.warn('Categories subscription fallback:', e);
+      setCategoriesLoading(false);
     }
   }, []);
 
@@ -358,6 +366,8 @@ function MainApp() {
                 categories={categories}
                 banners={banners}
                 bannersLoading={bannersLoading}
+                productsLoading={productsLoading}
+                categoriesLoading={categoriesLoading}
                 isAdmin={isAdmin}
                 onOpenQuickView={(prod) => setQuickViewProduct(prod)}
               />
@@ -378,6 +388,7 @@ function MainApp() {
               <CategoryPage
                 products={products}
                 categories={categories}
+                isLoading={productsLoading}
                 isAdmin={isAdmin}
                 onOpenQuickView={(prod) => setQuickViewProduct(prod)}
               />

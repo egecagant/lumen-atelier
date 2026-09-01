@@ -10,6 +10,7 @@ interface CategoryGridProps {
   onSelectCategory: (categoryId: string | null) => void;
   onOpenAdminCategories?: () => void;
   isAdmin?: boolean;
+  isLoading?: boolean;
 }
 
 export const CategoryGrid: React.FC<CategoryGridProps> = ({
@@ -19,9 +20,27 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
   onSelectCategory,
   onOpenAdminCategories,
   isAdmin,
+  isLoading = false,
 }) => {
   const { settings } = useSiteSettings();
   const [showAllMobile, setShowAllMobile] = useState(false);
+
+  // If initial loading and no categories cached, show graceful luxury placeholder skeletons
+  if (isLoading && categories.length === 0) {
+    return (
+      <section className="w-full max-w-[1720px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-16">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 sm:mb-10 gap-2 sm:gap-4">
+          <div className="h-10 bg-white/10 rounded-xl w-64 animate-pulse" />
+          <div className="h-4 bg-white/5 rounded-lg w-80 hidden sm:block animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="aspect-[4/3] rounded-2xl bg-[#0D0D11] border border-white/5 animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (categories.length === 0) {
     return (

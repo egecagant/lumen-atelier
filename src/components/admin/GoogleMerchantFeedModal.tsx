@@ -400,11 +400,11 @@ export const GoogleMerchantFeedModal: React.FC<GoogleMerchantFeedModalProps> = (
 
           <button
             type="button"
-            onClick={handleCopy}
+            onClick={handleCopyUrl}
             className="px-5 py-2.5 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-wider rounded-xl transition-all inline-flex items-center gap-2 cursor-pointer shadow-lg"
           >
             <Copy className="w-4 h-4" />
-            <span>{copied ? 'Kopyalandı!' : 'Feed Linkini Kopyala'}</span>
+            <span>{copiedUrl ? 'Kopyalandı!' : 'Feed Linkini Kopyala'}</span>
           </button>
         </div>
 

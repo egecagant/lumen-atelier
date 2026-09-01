@@ -237,10 +237,11 @@ export const CheckoutPage: React.FC = () => {
         const payload = {
           items: items.map(item => ({
             productId: item.product.id,
-            productName: item.product.name,
+            productName: item.selectedColor ? `${item.product.name} (${item.selectedColor})` : item.product.name,
             productImage: item.product.images?.[0] || '',
             price: item.product.price,
-            quantity: item.quantity
+            quantity: item.quantity,
+            selectedColor: item.selectedColor || null
           })),
           customerName: trimmedFullName,
           customerEmail: trimmedEmail,
@@ -333,9 +334,11 @@ export const CheckoutPage: React.FC = () => {
         },
         items: items.map(item => ({
           productId: item.product.id,
-          productName: item.product.name,
+          productName: item.selectedColor ? `${item.product.name} (${item.selectedColor})` : item.product.name,
           productImage: item.product.images?.[0] || '',
-          quantity: item.quantity
+          price: item.product.price,
+          quantity: item.quantity,
+          selectedColor: item.selectedColor || null
         })),
         discountCode: appliedCoupon?.code,
         paymentMethod,
@@ -1167,25 +1170,35 @@ export const CheckoutPage: React.FC = () => {
 
                 {/* Items List */}
                 <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                  {items.map((item) => (
-                    <div key={item.product.id} className="flex gap-3.5 p-3 rounded-2xl bg-black/40 border border-white/5">
-                      <img
-                        src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=200&q=80'}
-                        alt={item.product.name}
-                        className="w-16 h-16 object-cover rounded-xl bg-black border border-white/10 flex-shrink-0"
-                      />
-                      <div className="flex-1 flex flex-col justify-between min-w-0">
-                        <div>
-                          <h4 className="text-xs font-semibold text-zinc-200 truncate">{item.product.name}</h4>
-                          <span className="text-[10px] text-[#C5A059] uppercase tracking-wider">{item.product.categoryName}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-zinc-400 text-[11px]">Adet: {item.quantity}</span>
-                          <span className="font-serif-luxury font-bold text-white">{formatCurrency(item.product.price * item.quantity)}</span>
+                  {items.map((item) => {
+                    const itemKey = item.selectedColor ? `${item.product.id}-${item.selectedColor}` : item.product.id;
+                    return (
+                      <div key={itemKey} className="flex gap-3.5 p-3 rounded-2xl bg-black/40 border border-white/5">
+                        <img
+                          src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=200&q=80'}
+                          alt={item.product.name}
+                          className="w-16 h-16 object-cover rounded-xl bg-black border border-white/10 flex-shrink-0"
+                        />
+                        <div className="flex-1 flex flex-col justify-between min-w-0">
+                          <div>
+                            <h4 className="text-xs font-semibold text-zinc-200 truncate">{item.product.name}</h4>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <span className="text-[10px] text-[#C5A059] uppercase tracking-wider">{item.product.categoryName}</span>
+                              {item.selectedColor && (
+                                <span className="text-[9px] bg-white/10 text-zinc-300 px-1.5 py-0.2 rounded border border-white/10">
+                                  {item.selectedColor}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-zinc-400 text-[11px]">Adet: {item.quantity}</span>
+                            <span className="font-serif-luxury font-bold text-white">{formatCurrency(item.product.price * item.quantity)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* COUPON CODE INPUT SECTION */}

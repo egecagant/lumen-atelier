@@ -14,6 +14,8 @@ interface HomePageProps {
   categories: Category[];
   banners: HeroBanner[];
   bannersLoading?: boolean;
+  productsLoading?: boolean;
+  categoriesLoading?: boolean;
   isAdmin: boolean;
   onOpenQuickView: (product: Product) => void;
 }
@@ -23,6 +25,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   categories,
   banners,
   bannersLoading,
+  productsLoading,
+  categoriesLoading,
   isAdmin,
   onOpenQuickView,
 }) => {
@@ -49,6 +53,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <CategoryGrid
           categories={categories}
           products={products}
+          isLoading={categoriesLoading}
           selectedCategory={null}
           onSelectCategory={(catId) => {
             if (!catId) {
@@ -69,6 +74,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <ProductGrid
           products={products}
           categories={categories}
+          isLoading={productsLoading}
           selectedCategory={null}
           onSelectCategory={(catId) => {
             if (!catId) {

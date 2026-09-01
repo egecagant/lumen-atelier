@@ -24,6 +24,7 @@ interface ProductGridProps {
   onOpenAdminProductCreate?: () => void;
   onOpenAdminDemoData?: () => void;
   isAdmin?: boolean;
+  isLoading?: boolean;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -35,6 +36,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   onOpenAdminProductCreate,
   onOpenAdminDemoData,
   isAdmin,
+  isLoading = false,
 }) => {
   const { settings } = useSiteSettings();
   const [searchQuery, setSearchQuery] = useState('');
@@ -167,7 +169,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       </div>
 
       {/* Product Grid or EMPTY STATE */}
-      {visibleProducts.length > 0 ? (
+      {isLoading && products.length === 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-5 lg:gap-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            <div key={n} className="rounded-2xl bg-[#0D0D11] border border-white/5 overflow-hidden animate-pulse">
+              <div className="aspect-square bg-white/5" />
+              <div className="p-4 space-y-2.5">
+                <div className="h-3 bg-white/5 rounded w-1/3" />
+                <div className="h-4 bg-white/10 rounded w-4/5" />
+                <div className="h-5 bg-white/10 rounded w-1/2 pt-2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : visibleProducts.length > 0 ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-5 lg:gap-6">
             {visibleProducts.map((product) => (

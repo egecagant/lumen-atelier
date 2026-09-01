@@ -15,9 +15,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Palette
 } from 'lucide-react';
-import { Product } from '../types';
+import { Product, ProductColorOption } from '../types';
 import { formatCurrency } from '../lib/format';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -40,11 +41,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const { user, openAuthModal } = useAuth();
   const { settings } = useSiteSettings();
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<ProductColorOption | string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Handle ESC key and scroll lock
+  // Handle ESC key and scroll lock & Reset state on product change
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -54,6 +56,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     if (product) {
       window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
+      setSelectedImageIdx(0);
+      setQuantity(1);
+      if (product.colors && product.colors.length > 0) {
+        setSelectedColor(product.colors[0]);
+      } else {
+        setSelectedColor(null);
+      }
     }
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -78,6 +87,19 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const currentImage = images[selectedImageIdx] || images[0];
   const isFavorite = isWishlisted(product.id);
 
+  const selectedColorName = typeof selectedColor === 'string' ? selectedColor : selectedColor?.name;
+
+  const handleSelectColor = (color: ProductColorOption | string) => {
+    setSelectedColor(color);
+    const imgUrl = typeof color === 'object' ? color.imageUrl : undefined;
+    if (imgUrl) {
+      const existingIdx = images.findIndex(img => img === imgUrl);
+      if (existingIdx !== -1) {
+        setSelectedImageIdx(existingIdx);
+      }
+    }
+  };
+
   const handleWishlist = () => {
     toggleWishlist(product.id);
     if (!user) {
@@ -90,7 +112,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
-    addToCart(product, quantity);
+    addToCart(product, quantity, selectedColorName);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -245,6 +267,53 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {settings.productDetailTaxIncludedText || 'KDV Dahil'}
               </span>
             </div>
+
+            {/* Color / Finish Variants Selection */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-[#C5A059]" />
+                    <span className="text-[11px] uppercase tracking-wider text-zinc-300 font-semibold">
+                      Renk / Gövde:
+                    </span>
+                  </div>
+                  {selectedColorName && (
+                    <span className="text-[11px] font-medium text-[#C5A059] bg-[#C5A059]/10 px-2 py-0.5 rounded-md border border-[#C5A059]/30">
+                      {selectedColorName}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {product.colors.map((colorOption, cIdx) => {
+                    const cName = typeof colorOption === 'string' ? colorOption : colorOption.name;
+                    const cHex = typeof colorOption === 'string' ? '#C5A059' : (colorOption.hex || '#C5A059');
+                    const isSelected = selectedColorName === cName;
+
+                    return (
+                      <button
+                        key={cIdx}
+                        type="button"
+                        onClick={() => handleSelectColor(colorOption)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-black/90 text-white border-2 border-[#C5A059] ring-1 ring-[#C5A059]/50 shadow'
+                            : 'bg-black/40 text-zinc-400 border border-white/10 hover:border-white/30 hover:text-zinc-200'
+                        }`}
+                      >
+                        <span 
+                          className="w-3.5 h-3.5 rounded-full border border-white/30 shadow-inner flex-shrink-0"
+                          style={{ backgroundColor: cHex }} 
+                        />
+                        <span>{cName}</span>
+                        {isSelected && <Check className="w-3 h-3 text-[#C5A059]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             <div className="space-y-2">

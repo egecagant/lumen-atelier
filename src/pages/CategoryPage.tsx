@@ -10,6 +10,7 @@ interface CategoryPageProps {
   products: Product[];
   categories: Category[];
   isAdmin: boolean;
+  isLoading?: boolean;
   onOpenQuickView: (product: Product) => void;
 }
 
@@ -17,6 +18,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
   products,
   categories,
   isAdmin,
+  isLoading,
   onOpenQuickView,
 }) => {
   const { categorySlug } = useParams<{ categorySlug: string }>();
@@ -106,6 +108,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
         <ProductGrid
           products={products}
           categories={categories}
+          isLoading={isLoading}
           selectedCategory={currentCategory ? currentCategory.id : null}
           onSelectCategory={(catId) => {
             if (!catId) {

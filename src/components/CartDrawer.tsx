@@ -171,10 +171,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
               </div>
             ) : (
               cart.map((item) => {
+                const itemKey = item.selectedColor ? `${item.product.id}-${item.selectedColor}` : item.product.id;
                 const img = item.product.images?.[0] || 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=400&q=80';
                 return (
                   <div 
-                    key={item.product.id}
+                    key={itemKey}
                     className="flex gap-3 p-3 bento-card rounded-xl border border-white/10 hover:border-[#C5A059]/30 transition-all"
                   >
                     <button
@@ -199,7 +200,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                             {item.product.name}
                           </button>
                           <button
-                            onClick={() => removeFromCart(item.product.id)}
+                            onClick={() => removeFromCart(item.product.id, item.selectedColor)}
                             className="text-zinc-500 hover:text-rose-400 transition-colors p-1 -mt-1 -mr-1 flex-shrink-0"
                             title="Ürünü Sil"
                             aria-label="Ürünü Sil"
@@ -207,16 +208,23 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <span className="text-[10px] text-[#C5A059] uppercase tracking-wider block mt-0.5 font-medium truncate">
-                          {item.product.categoryName}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className="text-[10px] text-[#C5A059] uppercase tracking-wider font-medium truncate">
+                            {item.product.categoryName}
+                          </span>
+                          {item.selectedColor && (
+                            <span className="text-[9px] bg-white/10 text-zinc-200 px-1.5 py-0.5 rounded border border-white/10 font-medium">
+                              {item.selectedColor}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/5">
                         {/* Quantity Stepper with improved touch targets */}
                         <div className="flex items-center border border-white/15 bg-black/60 rounded-lg overflow-hidden">
                           <button
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedColor)}
                             className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors cursor-pointer"
                             aria-label="Miktarı azalt"
                           >
@@ -226,7 +234,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedColor)}
                             className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors cursor-pointer"
                             aria-label="Miktarı artır"
                           >

@@ -3,9 +3,9 @@ import { Product, CartItem } from '../types';
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, quantity?: number, selectedColor?: string) => void;
+  removeFromCart: (productId: string, selectedColor?: string) => void;
+  updateQuantity: (productId: string, quantity: number, selectedColor?: string) => void;
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
@@ -58,36 +58,44 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [wishlist]);
 
-  const addToCart = (product: Product, quantity = 1) => {
+  const addToCart = (product: Product, quantity = 1, selectedColor?: string) => {
     if (product.stockStatus === 'out_of_stock' || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)) {
       return;
     }
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
+      const existing = prev.find(
+        (item) => item.product.id === product.id && (item.selectedColor || '') === (selectedColor || '')
+      );
       if (existing) {
         return prev.map((item) =>
-          item.product.id === product.id
+          item.product.id === product.id && (item.selectedColor || '') === (selectedColor || '')
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      return [...prev, { product, quantity }];
+      return [...prev, { product, quantity, selectedColor }];
     });
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  const removeFromCart = (productId: string, selectedColor?: string) => {
+    setCart((prev) =>
+      prev.filter(
+        (item) => !(item.product.id === productId && (selectedColor === undefined || (item.selectedColor || '') === (selectedColor || '')))
+      )
+    );
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number, selectedColor?: string) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, selectedColor);
       return;
     }
     setCart((prev) =>
       prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product.id === productId && (selectedColor === undefined || (item.selectedColor || '') === (selectedColor || ''))
+          ? { ...item, quantity }
+          : item
       )
     );
   };

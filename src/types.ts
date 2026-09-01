@@ -1,5 +1,12 @@
 export type StockStatus = 'in_stock' | 'out_of_stock' | 'preorder';
 
+export interface ProductColorOption {
+  name: string;
+  hex?: string;
+  imageUrl?: string;
+  inStock?: boolean;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -21,6 +28,7 @@ export interface Product {
   categoryId: string;
   categoryName?: string;
   images: string[];
+  colors?: (ProductColorOption | string)[];
   stockStatus: StockStatus;
   stockQuantity: number;
   dimensions?: string;
@@ -48,6 +56,7 @@ export interface HeroBanner {
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedColor?: string;
 }
 
 export interface SavedAddress {
@@ -111,6 +120,7 @@ export interface OrderItem {
   productImage: string;
   price: number;
   quantity: number;
+  selectedColor?: string;
 }
 
 export interface Order {

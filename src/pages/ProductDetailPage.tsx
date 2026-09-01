@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Product, Category } from '../types';
+import { Product, Category, ProductColorOption } from '../types';
 import { SEO } from '../components/SEO';
 import { ProductCard } from '../components/ProductCard';
 import { ContactSection } from '../components/ContactSection';
@@ -26,7 +26,8 @@ import {
   PackageCheck,
   Award,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Palette
 } from 'lucide-react';
 
 interface ProductDetailPageProps {
@@ -53,16 +54,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const product = productSlug ? findProductBySlug(products, productSlug) : undefined;
   
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<ProductColorOption | string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Reset selected image when product changes
+  // Reset selected image & color when product changes
   useEffect(() => {
     setSelectedImageIdx(0);
     setQuantity(1);
+    if (product?.colors && product.colors.length > 0) {
+      setSelectedColor(product.colors[0]);
+    } else {
+      setSelectedColor(null);
+    }
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [productSlug]);
+  }, [productSlug, product?.id]);
 
   if (!product) {
     return (
@@ -111,9 +118,22 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     .filter(p => p.id !== product?.id && (p.categoryId === product?.categoryId || !product?.categoryId))
     .slice(0, 4);
 
+  const selectedColorName = typeof selectedColor === 'string' ? selectedColor : selectedColor?.name;
+
+  const handleSelectColor = (color: ProductColorOption | string) => {
+    setSelectedColor(color);
+    const imgUrl = typeof color === 'object' ? color.imageUrl : undefined;
+    if (imgUrl) {
+      const existingIdx = images.findIndex(img => img === imgUrl);
+      if (existingIdx !== -1) {
+        setSelectedImageIdx(existingIdx);
+      }
+    }
+  };
+
   const handleAddToCart = () => {
     if (!product || isOutOfStock) return;
-    addToCart(product, quantity);
+    addToCart(product, quantity, selectedColorName);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -314,6 +334,53 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </span>
                 )}
               </div>
+
+              {/* Color / Finish Variants Selection */}
+              {product.colors && product.colors.length > 0 && (
+                <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-[#C5A059]" />
+                      <span className="text-xs uppercase tracking-wider text-zinc-300 font-semibold">
+                        Gövde / Renk Seçimi:
+                      </span>
+                    </div>
+                    {selectedColorName && (
+                      <span className="text-xs font-medium text-[#C5A059] bg-[#C5A059]/10 px-2.5 py-0.5 rounded-full border border-[#C5A059]/30">
+                        {selectedColorName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2.5 pt-1">
+                    {product.colors.map((colorOption, cIdx) => {
+                      const cName = typeof colorOption === 'string' ? colorOption : colorOption.name;
+                      const cHex = typeof colorOption === 'string' ? '#C5A059' : (colorOption.hex || '#C5A059');
+                      const isSelected = selectedColorName === cName;
+
+                      return (
+                        <button
+                          key={cIdx}
+                          type="button"
+                          onClick={() => handleSelectColor(colorOption)}
+                          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-black/90 text-white border-2 border-[#C5A059] ring-2 ring-[#C5A059]/40 shadow-lg scale-[1.02]'
+                              : 'bg-black/40 text-zinc-400 border border-white/10 hover:border-white/30 hover:text-zinc-200'
+                          }`}
+                        >
+                          <span 
+                            className="w-4 h-4 rounded-full border border-white/30 shadow-inner flex-shrink-0"
+                            style={{ backgroundColor: cHex }} 
+                          />
+                          <span>{cName}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#C5A059] ml-0.5" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Purchase Actions */}
               <div className="space-y-3.5 pt-2">
