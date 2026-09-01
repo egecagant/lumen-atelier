@@ -1,4 +1,4 @@
-export type StockStatus = 'in_stock' | 'out_of_stock' | 'preorder';
+export type StockStatus = 'in_stock' | 'out_of_stock' | 'preorder' | 'coming_soon';
 
 export interface ProductColorOption {
   name: string;

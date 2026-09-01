@@ -92,7 +92,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     );
   }
 
-  const isOutOfStock = product ? (product.stockStatus === 'out_of_stock' || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)) : false;
+  const isComingSoon = product ? product.stockStatus === 'coming_soon' : false;
+  const isPreorder = product ? product.stockStatus === 'preorder' : false;
+  const isOutOfStock = product ? (product.stockStatus === 'out_of_stock' || (!isComingSoon && typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)) : false;
   const category = categories.find(c => c.id === product?.categoryId);
   const isFavorite = product ? isWishlisted(product.id) : false;
 
@@ -132,7 +134,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   };
 
   const handleAddToCart = () => {
-    if (!product || isOutOfStock) return;
+    if (!product || isOutOfStock || isComingSoon) return;
     addToCart(product, quantity, selectedColorName);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -231,15 +233,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
                 {/* Badges Overlay */}
                 <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-                  <span className="glass-panel text-[#C5A059] text-xs uppercase tracking-widest px-3 py-1 rounded-full font-semibold border border-[#C5A059]/40 shadow-lg">
+                  <span className="glass-panel text-[#C5A059] text-xs uppercase tracking-widest px-3 py-1 rounded-full font-semibold border border-[#C5A059]/40 shadow-lg w-fit">
                     {product.categoryName || 'Lüks Koleksiyon'}
                   </span>
+                  {isComingSoon && (
+                    <span className="bg-[#C5A059] text-black text-xs uppercase tracking-widest px-3 py-1 rounded-full font-bold shadow-md w-fit">
+                      Yakında Gelecek
+                    </span>
+                  )}
                   {isOutOfStock && (
-                    <span className="bg-black/90 text-zinc-300 border border-zinc-700 text-xs uppercase tracking-widest px-3 py-1 rounded-full font-bold shadow-lg">
+                    <span className="bg-black/90 text-zinc-300 border border-zinc-700 text-xs uppercase tracking-widest px-3 py-1 rounded-full font-bold shadow-lg w-fit">
                       Tükendi
                     </span>
                   )}
-                  {!isOutOfStock && product.isNewArrival && (
+                  {!isOutOfStock && !isComingSoon && product.isNewArrival && (
                     <span className="bg-[#C5A059] text-black text-xs uppercase tracking-widest px-3 py-1 rounded-full font-bold shadow-md w-[100px] text-center inline-block">
                       Yeni Seri
                     </span>
@@ -311,29 +318,45 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               </div>
 
               {/* Price Banner */}
-              <div className="p-5 rounded-2xl glass-panel border border-white/10 flex items-baseline justify-between">
-                <div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-serif-luxury text-3xl sm:text-4xl text-[#C5A059] font-bold tracking-tight">
-                      {formatCurrency(product.price)}
-                    </span>
-                    {!!(product.compareAtPrice && product.compareAtPrice > product.price) && (
-                      <span className="text-base text-zinc-500 line-through">
-                        {formatCurrency(product.compareAtPrice)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[11px] text-zinc-400">
-                    {settings.productDetailTaxIncludedText || 'Tüm vergiler ve sigortalı kargo dahildir.'}
+              {isComingSoon ? (
+                <div className="p-6 rounded-2xl glass-panel border border-[#C5A059]/30 flex flex-col items-center justify-center text-center space-y-1.5 bg-[#C5A059]/5">
+                  <span className="font-serif-luxury text-2xl sm:text-3xl text-[#C5A059] font-bold uppercase tracking-[0.25em]">
+                    Yakında
+                  </span>
+                  <span className="text-xs text-zinc-400 font-light">
+                    Bu özel tasarım yakında koleksiyonumuza dahil olacaktır.
                   </span>
                 </div>
+              ) : (
+                <div className="p-5 rounded-2xl glass-panel border border-white/10 flex items-baseline justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-baseline gap-3">
+                      <span className="font-serif-luxury text-3xl sm:text-4xl text-[#C5A059] font-bold tracking-tight">
+                        {formatCurrency(product.price)}
+                      </span>
+                      {isPreorder && (
+                        <span className="text-sm font-medium text-amber-400">
+                          ({settings.productCardPreorderText || 'Ön Sipariş'})
+                        </span>
+                      )}
+                      {!!(product.compareAtPrice && product.compareAtPrice > product.price) && (
+                        <span className="text-base text-zinc-500 line-through">
+                          {formatCurrency(product.compareAtPrice)}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-zinc-400">
+                      {settings.productDetailTaxIncludedText || 'Tüm vergiler ve sigortalı kargo dahildir.'}
+                    </span>
+                  </div>
 
-                {isOutOfStock && (
-                  <span className="text-xs px-3 py-1 rounded-full font-medium bg-red-950/60 border border-red-800/60 text-red-300">
-                    Tükendi
-                  </span>
-                )}
-              </div>
+                  {isOutOfStock && (
+                    <span className="text-xs px-3 py-1 rounded-full font-medium bg-red-950/60 border border-red-800/60 text-red-300">
+                      Tükendi
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Color / Finish Variants Selection */}
               {product.colors && product.colors.length > 0 && (
@@ -383,67 +406,86 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               )}
 
               {/* Purchase Actions */}
-              <div className="space-y-3.5 pt-2">
-                <div className="flex items-center gap-3">
-                  {/* Quantity */}
-                  <div className="flex items-center bg-black/60 border border-white/15 rounded-2xl p-1.5">
+              {isComingSoon ? (
+                <div className="p-5 rounded-2xl bg-black/40 border border-white/10 text-center space-y-2">
+                  <div className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-[#C5A059] font-semibold">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Yakında Koleksiyonda</span>
+                  </div>
+                  <p className="text-xs text-zinc-400">
+                    Bu tasarım henüz satışa açılmamıştır. Favorilerinize ekleyerek çıktığında ilk haberdar olanlardan olabilirsiniz.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3.5 pt-2">
+                  <div className="flex items-center gap-3">
+                    {/* Quantity */}
+                    <div className="flex items-center bg-black/60 border border-white/15 rounded-2xl p-1.5">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={isOutOfStock}
+                        className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
+                      >
+                        -
+                      </button>
+                      <span className="w-10 text-center font-bold text-sm">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity(quantity + 1)}
+                        disabled={isOutOfStock}
+                        className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Add to Cart */}
                     <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      id="page-add-to-cart-btn"
+                      onClick={handleAddToCart}
                       disabled={isOutOfStock}
-                      className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
+                      className={`flex-1 py-4 px-6 rounded-2xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        isOutOfStock
+                          ? 'bg-zinc-800/90 text-zinc-500 cursor-not-allowed border border-white/10'
+                          : added
+                          ? 'bg-emerald-600 text-white'
+                          : isPreorder
+                          ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-md hover:scale-[1.01]'
+                          : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-md hover:scale-[1.01]'
+                      }`}
                     >
-                      -
-                    </button>
-                    <span className="w-10 text-center font-bold text-sm">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      disabled={isOutOfStock}
-                      className="w-10 h-10 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
-                    >
-                      +
+                      {isOutOfStock ? (
+                        <span>Tükendi</span>
+                      ) : added ? (
+                        <>
+                          <Check className="w-5 h-5" />
+                          <span>Sepete Eklendi</span>
+                        </>
+                      ) : isPreorder ? (
+                        <>
+                          <ShoppingBag className="w-5 h-5" />
+                          <span>Ön Sipariş Ver ({formatCurrency(product.price * quantity)})</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="w-5 h-5" />
+                          <span>Sepete Ekle ({formatCurrency(product.price * quantity)})</span>
+                        </>
+                      )}
                     </button>
                   </div>
 
-                  {/* Add to Cart */}
-                  <button
-                    id="page-add-to-cart-btn"
-                    onClick={handleAddToCart}
-                    disabled={isOutOfStock}
-                    className={`flex-1 py-4 px-6 rounded-2xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                      isOutOfStock
-                        ? 'bg-zinc-800/90 text-zinc-500 cursor-not-allowed border border-white/10'
-                        : added
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-md hover:scale-[1.01]'
-                    }`}
-                  >
-                    {isOutOfStock ? (
-                      <span>Tükendi</span>
-                    ) : added ? (
-                      <>
-                        <Check className="w-5 h-5" />
-                        <span>Sepete Eklendi</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-5 h-5" />
-                        <span>Sepete Ekle ({formatCurrency(product.price * quantity)})</span>
-                      </>
-                    )}
-                  </button>
+                  {/* Instant Checkout Button */}
+                  {!isOutOfStock && (
+                    <button
+                      onClick={() => onInstantBuy(product, quantity)}
+                      className="w-full py-4 glass-panel hover:bg-white/10 text-[#C5A059] border border-[#C5A059]/50 hover:border-[#C5A059] rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>{isPreorder ? 'Ön Sipariş ile Hemen Al (Stripe & 3D Secure)' : 'Hemen Satın Al (Stripe & 3D Secure)'}</span>
+                    </button>
+                  )}
                 </div>
-
-                {/* Instant Checkout Button */}
-                {!isOutOfStock && (
-                  <button
-                    onClick={() => onInstantBuy(product, quantity)}
-                    className="w-full py-4 glass-panel hover:bg-white/10 text-[#C5A059] border border-[#C5A059]/50 hover:border-[#C5A059] rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Hemen Satın Al (Stripe & 3D Secure)</span>
-                  </button>
-                )}
-              </div>
+              )}
 
               {/* Guarantees & Craftsmanship Bento */}
               <div className="grid grid-cols-2 gap-3 pt-2">
