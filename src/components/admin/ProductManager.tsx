@@ -24,25 +24,16 @@ import {
   Palette,
   RotateCcw,
   Link as LinkIcon,
-  CheckCircle2
+  CheckCircle2,
+  Crop,
+  Sliders
 } from 'lucide-react';
 import { Product, Category, StockStatus, ProductColorOption } from '../../types';
 import { formatCurrency, slugify } from '../../lib/format';
 import { db, COLLECTIONS, addDoc, updateDoc, deleteDoc, doc, collection, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { compressImageFiles, optimizeImageList, estimatePayloadSize } from '../../lib/imageCompressor';
 import { GoogleMerchantFeedModal } from './GoogleMerchantFeedModal';
-
-const PRESET_COLORS: ProductColorOption[] = [
-  { name: 'Mat Siyah', hex: '#18181b' },
-  { name: 'Masif Pirinç / Altın', hex: '#d4af37' },
-  { name: 'Kozmik Beyaz', hex: '#f8fafc' },
-  { name: 'Amber / Karamel', hex: '#b45309' },
-  { name: 'Fırçalanmış Gümüş / Krom', hex: '#94a3b8' },
-  { name: 'Doğal Mermer Gri', hex: '#cbd5e1' },
-  { name: 'Zümrüt Yeşili', hex: '#065f46' },
-  { name: 'Gece Mavisi', hex: '#1e3a8a' },
-  { name: 'Terracotta / Bakır', hex: '#c2410c' },
-];
+import { ImageCropperModal } from './ImageCropperModal';
 
 interface ProductManagerProps {
   products: Product[];
@@ -69,6 +60,11 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
   const [previewZoomImage, setPreviewZoomImage] = useState<string | null>(null);
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   const [editImageUrlValue, setEditImageUrlValue] = useState<string>('');
+
+  // Image Cropper State
+  const [isCropperOpen, setIsCropperOpen] = useState<boolean>(false);
+  const [cropperTargetIdx, setCropperTargetIdx] = useState<number | null>(null);
+  const [cropperImageUrl, setCropperImageUrl] = useState<string>('');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -120,10 +116,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
       images: [
         'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1000&q=80'
       ],
-      colors: [
-        { name: 'Mat Siyah', hex: '#18181b' },
-        { name: 'Masif Pirinç / Altın', hex: '#d4af37' }
-      ]
+      colors: []
     });
     setImageUrlInput('');
     setNewColorName('');
@@ -139,8 +132,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
     // Normalize existing colors (whether they were strings or objects)
     const normalizedColors: ProductColorOption[] = (prod.colors || []).map(c => {
       if (typeof c === 'string') {
-        const foundPreset = PRESET_COLORS.find(p => p.name.toLowerCase() === c.toLowerCase());
-        return { name: c, hex: foundPreset?.hex || '#C5A059' };
+        return { name: c, hex: '#C5A059' };
       }
       return c;
     });
@@ -179,6 +171,34 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
       images: [...prev.images, imageUrlInput.trim()]
     }));
     setImageUrlInput('');
+  };
+
+  const openCropperForImage = (index: number) => {
+    const targetUrl = formData.images[index];
+    if (!targetUrl) return;
+    setCropperTargetIdx(index);
+    setCropperImageUrl(targetUrl);
+    setIsCropperOpen(true);
+  };
+
+  const handleSaveCroppedImage = (croppedDataUrl: string) => {
+    if (cropperTargetIdx === null) {
+      // Add as new image
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, croppedDataUrl]
+      }));
+    } else {
+      // Replace existing image at target index
+      setFormData(prev => {
+        const newImages = [...prev.images];
+        newImages[cropperTargetIdx] = croppedDataUrl;
+        return { ...prev, images: newImages };
+      });
+    }
+    setIsCropperOpen(false);
+    setCropperTargetIdx(null);
+    setCropperImageUrl('');
   };
 
   const handleRemoveImage = (index: number) => {
@@ -275,16 +295,6 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
   };
 
   // Color options actions
-  const handleAddPresetColor = (preset: ProductColorOption) => {
-    if (formData.colors.some(c => c.name.toLowerCase() === preset.name.toLowerCase())) {
-      return; // already added
-    }
-    setFormData(prev => ({
-      ...prev,
-      colors: [...prev.colors, { ...preset }]
-    }));
-  };
-
   const handleAddCustomColor = () => {
     if (!newColorName.trim()) return;
     const exists = formData.colors.some(c => c.name.toLowerCase() === newColorName.trim().toLowerCase());
@@ -818,7 +828,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                               disabled={idx === 0}
                               onClick={() => handleMoveImage(idx, 'left')}
                               title="Sola / Öne Taşı"
-                              className="p-1 text-zinc-400 hover:text-white disabled:opacity-20 disabled:hover:text-zinc-400 hover:bg-white/10 rounded transition-colors"
+                              className="p-1 text-zinc-400 hover:text-white disabled:opacity-20 disabled:hover:text-zinc-400 hover:bg-white/10 rounded transition-colors cursor-pointer"
                             >
                               <ChevronLeft className="w-3.5 h-3.5" />
                             </button>
@@ -827,29 +837,37 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                               disabled={idx === formData.images.length - 1}
                               onClick={() => handleMoveImage(idx, 'right')}
                               title="Sağa / Arkaya Taşı"
-                              className="p-1 text-zinc-400 hover:text-white disabled:opacity-20 disabled:hover:text-zinc-400 hover:bg-white/10 rounded transition-colors"
+                              className="p-1 text-zinc-400 hover:text-white disabled:opacity-20 disabled:hover:text-zinc-400 hover:bg-white/10 rounded transition-colors cursor-pointer"
                             >
                               <ChevronRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
 
-                          {/* Quick Actions (Make Cover / Edit / Delete) */}
+                          {/* Quick Actions (Make Cover / Crop & Frame / Edit / Delete) */}
                           <div className="flex items-center gap-1">
                             {idx !== 0 && (
                               <button
                                 type="button"
                                 onClick={() => handleMakeCover(idx)}
                                 title="Kapak Fotoğrafı Yap"
-                                className="px-1.5 py-0.5 text-[9px] text-[#C5A059] hover:bg-[#C5A059]/10 rounded border border-[#C5A059]/30 transition-colors"
+                                className="px-1.5 py-0.5 text-[9px] text-[#C5A059] hover:bg-[#C5A059]/10 rounded border border-[#C5A059]/30 transition-colors cursor-pointer"
                               >
                                 Kapak Yap
                               </button>
                             )}
                             <button
                               type="button"
+                              onClick={() => openCropperForImage(idx)}
+                              title="Karede Konumlandır & Kırp"
+                              className="p-1 text-zinc-400 hover:text-[#C5A059] hover:bg-[#C5A059]/10 rounded transition-colors cursor-pointer"
+                            >
+                              <Crop className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => openEditImageModal(idx)}
-                              title="Görseli Düzenle veya Değiştir"
-                              className="p-1 text-zinc-400 hover:text-[#C5A059] hover:bg-white/10 rounded transition-colors"
+                              title="Görseli Değiştir veya URL Güncelle"
+                              className="p-1 text-zinc-400 hover:text-white hover:bg-white/10 rounded transition-colors cursor-pointer"
                             >
                               <Edit3 className="w-3 h-3" />
                             </button>
@@ -857,7 +875,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                               type="button"
                               onClick={() => handleRemoveImage(idx)}
                               title="Görseli Kaldır"
-                              className="p-1 text-zinc-400 hover:text-rose-400 hover:bg-rose-950/40 rounded transition-colors"
+                              className="p-1 text-zinc-400 hover:text-rose-400 hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -875,7 +893,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                 )}
               </div>
 
-              {/* Row 3.5: Color Options Manager (Renk Seçenekleri & Varyantlar) */}
+              {/* Row 3.5: Color Options Manager (Renk Seçenekleri & Varyantlar - Sadece Kullanıcının Eklediği Özel Renkler) */}
               <div className="p-4 bg-black/30 border border-white/10 rounded-2xl space-y-3.5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -884,45 +902,13 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                       <span>Renk & Gövde Seçenekleri ({formData.colors.length})</span>
                     </label>
                     <p className="text-[10px] text-zinc-400 mt-0.5">
-                      Müşterilerinizin ürün sayfasında veya sepetinde tercih edebileceği renk varyantları.
+                      Müşterilerinizin ürün detayında seçebileceği renk seçeneklerini belirleyin.
                     </p>
                   </div>
                 </div>
 
-                {/* Preset Quick Colors */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold block">
-                    Hızlı Renk Şablonları (Tek Tıkla Ekle):
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {PRESET_COLORS.map((preset, pIdx) => {
-                      const isAdded = formData.colors.some(c => c.name.toLowerCase() === preset.name.toLowerCase());
-                      return (
-                        <button
-                          key={pIdx}
-                          type="button"
-                          disabled={isAdded}
-                          onClick={() => handleAddPresetColor(preset)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border transition-all ${
-                            isAdded
-                              ? 'bg-white/5 border-white/10 text-zinc-500 cursor-not-allowed opacity-60'
-                              : 'bg-black/50 border-white/15 text-zinc-300 hover:border-[#C5A059] hover:text-white'
-                          }`}
-                        >
-                          <span 
-                            className="w-2.5 h-2.5 rounded-full border border-white/30 flex-shrink-0" 
-                            style={{ backgroundColor: preset.hex }} 
-                          />
-                          <span>{preset.name}</span>
-                          {isAdded && <Check className="w-3 h-3 text-emerald-400" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 {/* Custom Color Adder Row */}
-                <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                   <div className="flex items-center gap-2">
                     {/* Color Swatch Picker */}
                     <div className="relative flex items-center gap-1.5 bg-black/40 border border-white/10 px-2.5 py-1.5 rounded-xl">
@@ -931,7 +917,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                         value={newColorHex}
                         onChange={(e) => setNewColorHex(e.target.value)}
                         className="w-6 h-6 rounded-lg cursor-pointer bg-transparent border-0 p-0"
-                        title="Renk Seçici"
+                        title="Renk Tonu Seçin"
                       />
                       <span className="font-mono text-[10px] text-zinc-400 uppercase">{newColorHex}</span>
                     </div>
@@ -947,8 +933,8 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                           handleAddCustomColor();
                         }
                       }}
-                      placeholder="Özel Renk Adı (Örn: Antik Bronz, Saf Amber)"
-                      className="flex-1 min-w-[160px] px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none text-xs"
+                      placeholder="Renk Adı (Örn: Antik Bronz, Saf Amber, Mat Siyah)"
+                      className="flex-1 min-w-[170px] px-3.5 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none text-xs"
                     />
                   </div>
 
@@ -958,23 +944,23 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                       type="url"
                       value={newColorImageUrl}
                       onChange={(e) => setNewColorImageUrl(e.target.value)}
-                      placeholder="Opsiyonel Renk Fotoğrafı URL'si"
-                      className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none text-xs"
+                      placeholder="Opsiyonel Renk Görseli URL'si"
+                      className="flex-1 px-3.5 py-2 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none text-xs"
                     />
 
                     <button
                       type="button"
                       onClick={handleAddCustomColor}
-                      className="px-4 py-2 bg-[#C5A059] hover:bg-[#d6b26b] text-black font-bold rounded-xl transition-colors text-xs whitespace-nowrap"
+                      className="px-4 py-2 bg-[#C5A059] hover:bg-[#d6b26b] text-black font-bold rounded-xl transition-colors text-xs whitespace-nowrap cursor-pointer"
                     >
-                      Ekle
+                      Renk Ekle
                     </button>
                   </div>
                 </div>
 
                 {/* Added Colors List */}
                 {formData.colors.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 pt-2">
+                  <div className="flex flex-wrap gap-2 pt-1">
                     {formData.colors.map((color, cIdx) => (
                       <div
                         key={cIdx}
@@ -995,7 +981,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                         <button
                           type="button"
                           onClick={() => handleRemoveColor(cIdx)}
-                          className="text-zinc-500 hover:text-rose-400 p-0.5 rounded transition-colors"
+                          className="text-zinc-500 hover:text-rose-400 p-0.5 rounded transition-colors cursor-pointer"
                           title="Rengi Kaldır"
                         >
                           <X className="w-3.5 h-3.5" />
@@ -1212,14 +1198,34 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
               </button>
             </div>
 
-            {/* Current Image Preview */}
-            <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center relative">
-              <img 
-                src={editImageUrlValue || formData.images[editingImageIndex]} 
-                alt="Önizleme" 
-                className="w-full h-full object-cover" 
-                onError={(e) => { (e.target as HTMLElement).style.opacity = '0.3'; }}
-              />
+            {/* Current Image Preview & Crop Trigger */}
+            <div className="space-y-2">
+              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center relative group">
+                <img 
+                  src={editImageUrlValue || formData.images[editingImageIndex]} 
+                  alt="Önizleme" 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => { (e.target as HTMLElement).style.opacity = '0.3'; }}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const targetIdx = editingImageIndex;
+                  const targetUrl = editImageUrlValue || formData.images[targetIdx];
+                  setEditingImageIndex(null);
+                  if (targetUrl) {
+                    setCropperTargetIdx(targetIdx);
+                    setCropperImageUrl(targetUrl);
+                    setIsCropperOpen(true);
+                  }
+                }}
+                className="w-full py-2.5 bg-[#C5A059]/15 hover:bg-[#C5A059]/25 text-[#C5A059] border border-[#C5A059]/40 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow"
+              >
+                <Crop className="w-4 h-4" />
+                <span>Görseli Kare İçinde Kırp & Konumlandır</span>
+              </button>
             </div>
 
             {/* Replace by File */}
@@ -1258,14 +1264,14 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setEditingImageIndex(null)}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-xl text-xs transition-colors"
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Vazgeç
               </button>
               <button
                 type="button"
                 onClick={handleSaveEditedImage}
-                className="px-5 py-2 bg-[#C5A059] hover:bg-[#d6b26b] text-black font-bold rounded-xl text-xs transition-colors"
+                className="px-5 py-2 bg-[#C5A059] hover:bg-[#d6b26b] text-black font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Görseli Kaydet
               </button>
@@ -1273,6 +1279,20 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
           </div>
         </div>
       )}
+
+      {/* Interactive Image Cropper & Square Framing Modal */}
+      <ImageCropperModal
+        isOpen={isCropperOpen}
+        onClose={() => {
+          setIsCropperOpen(false);
+          setCropperTargetIdx(null);
+          setCropperImageUrl('');
+        }}
+        imageUrl={cropperImageUrl}
+        onSaveCrop={handleSaveCroppedImage}
+        aspectRatio="1:1"
+        title="Ürün Görselini Kare Çerçevede Konumlandır & Kırp"
+      />
     </div>
   );
 };
