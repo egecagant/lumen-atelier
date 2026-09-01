@@ -4,6 +4,7 @@ import { ShoppingBag, Eye, Heart, Sparkles, Check, ChevronLeft, ChevronRight, Ex
 import { Product } from '../types';
 import { formatCurrency } from '../lib/format';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { getProductSlug } from '../lib/slugify';
 
@@ -18,6 +19,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const { addToCart, toggleWishlist, isWishlisted } = useCart();
+  const { user, openAuthModal } = useAuth();
   const { settings } = useSiteSettings();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [addedAnimation, setAddedAnimation] = useState(false);
@@ -56,6 +58,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleWishlist(product.id);
+    if (!user) {
+      openAuthModal(
+        'Beğendiğiniz el yapımı lambaları favori listenize kaydetmek ve profilinizde saklamak için lütfen giriş yapın veya ücretsiz hesap oluşturun.',
+        'Favorilere Eklemek İçin Giriş Yapın'
+      );
+    }
   };
 
   const handleQuickView = (e: React.MouseEvent) => {
@@ -130,11 +138,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Status Badges */}
         <div className="absolute top-2 left-2 sm:top-3.5 sm:left-3.5 z-10 flex flex-col gap-1 pointer-events-none">
-          {isOutOfStock && (
-            <span className="bg-black/90 text-zinc-300 border border-zinc-700 text-[8px] sm:text-[10px] uppercase tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-bold backdrop-blur-md shadow-lg">
-              {settings.productCardOutOfStockText || 'Tükendi'}
-            </span>
-          )}
           {!isOutOfStock && product.stockStatus === 'preorder' && (
             <span className="bg-amber-950/85 text-amber-300 border border-amber-800/60 text-[8px] sm:text-[10px] uppercase tracking-wider px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium backdrop-blur-md">
               {settings.productCardPreorderText || 'Ön Sipariş'}
@@ -152,18 +155,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Wishlist Heart Button */}
+        {/* Wishlist Heart Button - Clean icon without background highlight */}
         <button
           id={`wishlist-btn-${product.id}`}
           onClick={handleWishlist}
           aria-label="Favorilere Ekle"
-          className={`absolute top-2 right-2 sm:top-3.5 sm:right-3.5 z-20 p-1.5 sm:p-2.5 rounded-full backdrop-blur-md transition-all duration-300 ${
-            isFavorite
-              ? 'bg-rose-950/90 text-rose-400 border border-rose-700/80 shadow-md'
-              : 'bg-black/50 text-zinc-400 hover:text-white hover:bg-black/80 border border-white/10 hover:border-[#C5A059]/50'
-          }`}
+          className="absolute top-2 right-2 sm:top-3.5 sm:right-3.5 z-20 p-1.5 sm:p-2 text-white/70 hover:text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none"
         >
-          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-rose-400' : ''}`} />
+          <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : 'text-white stroke-[2]'}`} />
         </button>
 
         {/* Quick Action Overlay (Desktop Hover) */}

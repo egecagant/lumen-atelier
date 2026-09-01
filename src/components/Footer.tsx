@@ -42,34 +42,39 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="space-y-3">
-            <h4 className="font-semibold text-zinc-200 text-xs uppercase tracking-widest">
-              {settings.footerCol2Title || 'Hizmetler & Destek'}
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/ozel-tasarim" className="hover:text-[#C5A059] transition-colors">
-                  Özel Tasarım Hizmeti
-                </Link>
-              </li>
-              <li>
-                <Link to="/ozel-tasarim" className="hover:text-[#C5A059] transition-colors">
-                  Proje & B2B Talepleri
-                </Link>
-              </li>
-              <li>
-                <Link to="/" className="hover:text-[#C5A059] transition-colors">
-                  Sigortalı Kargo & Teslimat
-                </Link>
-              </li>
-              <li>
-                <Link to="/ozel-tasarim" className="hover:text-[#C5A059] transition-colors">
-                  Özel Tasarım İletişim
-                </Link>
-              </li>
-            </ul>
-          </div>
+            {/* Quick Links */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-zinc-200 text-xs uppercase tracking-widest">
+                {settings.footerCol2Title || 'Hizmetler & Destek'}
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/begenilenler" className="hover:text-[#C5A059] transition-colors flex items-center gap-1.5">
+                    <span>Beğenilen Tasarımlar</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/misafir-odeme" className="hover:text-[#C5A059] transition-colors">
+                    Misafir Olarak Satın Al
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/profil" className="hover:text-[#C5A059] transition-colors">
+                    Hesabım & Siparişlerim
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/ozel-tasarim" className="hover:text-[#C5A059] transition-colors">
+                    Özel Tasarım Hizmeti
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/ozel-tasarim" className="hover:text-[#C5A059] transition-colors">
+                    Proje & B2B Talepleri
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
           {/* Secure & Admin */}
           <div className="space-y-3">

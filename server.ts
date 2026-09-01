@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { initializeApp, getApps, getApp } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import firebaseConfigData from './firebase-applet-config.json' with { type: 'json' };
+import { generateGoogleMerchantXml } from './src/lib/googleMerchantFeed.ts';
 
 dotenv.config();
 
@@ -277,6 +278,144 @@ async function startServer() {
       hasApiKey: !!process.env.IYZICO_API_KEY,
       time: new Date().toISOString()
     });
+  });
+
+  // Google Merchant Center & Google Shopping XML Feed Endpoint
+  const handleGoogleMerchantFeed = async (req: express.Request, res: express.Response) => {
+    try {
+      const baseUrl = getBaseAppUrl(req);
+      let productsList: any[] = [];
+
+      try {
+        const db = getAdminDb();
+        const snap = await db.collection('products').get();
+        if (!snap.empty) {
+          snap.forEach(doc => {
+            const data = doc.data();
+            if (data.active !== false) {
+              productsList.push({
+                id: doc.id,
+                ...data
+              });
+            }
+          });
+        }
+      } catch (dbErr) {
+        console.warn('[Google Merchant Feed] Firestore fetch warning, falling back to default catalogue:', dbErr);
+      }
+
+      // If database is empty or still initializing, provide default live catalogue
+      if (productsList.length === 0) {
+        productsList = [
+          {
+            id: 'astronot-kozmik-cocuk-masa-lambasi',
+            name: 'Astronot Kozmik Çocuk Masa Lambası',
+            slug: 'astronot-kozmik-cocuk-masa-lambasi',
+            description: 'Yumuşak silikon doku ve sıcak LED ışık teknolojisi ile çocukların uyku ve ders saatlerine eşlik eden büyülü bir tasarım. Ayarlanabilir kask vizörü ve nefes alan gece modu ile karanlık korkusuna son verir.',
+            shortDescription: 'Göz korumalı sıcak LED, 3 kademeli gece lambası modu.',
+            price: 345,
+            compareAtPrice: 420,
+            categoryName: 'Çocuk Masa Lambası',
+            images: [
+              'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1000&q=80',
+              'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1000&q=80'
+            ],
+            stockStatus: 'in_stock',
+            stockQuantity: 18,
+            material: 'Mat Reçine, BPA-Free Yumuşak Silikon, Optik Akrilik'
+          },
+          {
+            id: 'nero-marquina-mermer-pirinc-heykelsi-lamba',
+            name: 'Nero Marquina Mermer & Pirinç Heykelsi Lamba',
+            slug: 'nero-marquina-mermer-pirinc-heykelsi-lamba',
+            description: 'İspanya’dan ithal tek parça damarlı Nero Marquina siyah mermer blok üzerine oturtulmuş fırçalanmış masif pirinç silindir. Yaşam alanlarında sanatsal bir odak noktası oluşturur.',
+            shortDescription: 'Doğal siyah mermer gövde, fırçalanmış pirinç başlık.',
+            price: 1890,
+            compareAtPrice: 2250,
+            categoryName: 'Dekoratif Lamba',
+            images: [
+              'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=1000&q=80',
+              'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1000&q=80'
+            ],
+            stockStatus: 'in_stock',
+            stockQuantity: 6,
+            material: 'Doğal Nero Marquina Mermer, Masif Pirinç'
+          },
+          {
+            id: 'amber-glow-ufleme-cam-sarkit-avize',
+            name: 'Amber Glow Üfleme Cam Sarkıt Avize',
+            slug: 'amber-glow-ufleme-cam-sarkit-avize',
+            description: 'Bal rengi organik formlu zarif amber cam kubbe ve antrasit detaylar. Işığı homojen yayarak yemek masası ve salonlarda davetkar bir sıcaklık yaratır.',
+            shortDescription: 'Organik formlu zarif amber cam, antrasit askı aparatı.',
+            price: 1420,
+            categoryName: 'Aydınlatma',
+            images: [
+              'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1000&q=80',
+              'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=1000&q=80'
+            ],
+            stockStatus: 'in_stock',
+            stockQuantity: 12,
+            material: 'Bohemya Amber Camı, Mat Siyah Çelik'
+          },
+          {
+            id: 'sombre-mantar-dokunmatik-kablosuz-masa-lambasi',
+            name: 'Sombre Mantar Dokunmatik Kablosuz Masa Lambası',
+            slug: 'sombre-mantar-dokunmatik-kablosuz-masa-lambasi',
+            description: 'Kablosuz özgürlük sunan şarjlı taşınabilir masa lambası. 3 kademeli dokunmatik hassasiyet, IP54 su sıçramalarına dayanıklılık ve 18 saate kadar kesintisiz çalışma performansı.',
+            shortDescription: 'Taşınabilir şarjlı lamba, 3 seviyeli dokunmatik karartma.',
+            price: 580,
+            compareAtPrice: 690,
+            categoryName: 'Masa Lambaları',
+            images: [
+              'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?auto=format&fit=crop&w=1000&q=80',
+              'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=1000&q=80'
+            ],
+            stockStatus: 'in_stock',
+            stockQuantity: 24,
+            material: 'Eloksallı Bronz Alüminyum, Buzlu Difüzör'
+          }
+        ];
+      }
+
+      const xmlContent = generateGoogleMerchantXml(productsList, baseUrl);
+
+      if (req.query.download === '1' || req.query.download === 'true') {
+        res.setHeader('Content-Disposition', 'attachment; filename="google-merchant-lumen.xml"');
+      }
+
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+      return res.send(xmlContent);
+    } catch (feedErr: any) {
+      console.error('[Google Merchant Feed] Error generating XML:', feedErr);
+      res.status(500).type('text/plain').send('Google Merchant feed generation error: ' + feedErr.message);
+    }
+  };
+
+  app.get('/api/feeds/google-merchant.xml', handleGoogleMerchantFeed);
+  app.get('/feeds/google-merchant.xml', handleGoogleMerchantFeed);
+  app.get('/google-merchant.xml', handleGoogleMerchantFeed);
+
+  // JSON summary of feed for diagnostic testing
+  app.get('/api/feeds/google-merchant.json', async (req, res) => {
+    try {
+      const baseUrl = getBaseAppUrl(req);
+      const db = getAdminDb();
+      const snap = await db.collection('products').get();
+      const productsList: any[] = [];
+      snap.forEach(doc => {
+        productsList.push({ id: doc.id, ...doc.data() });
+      });
+
+      res.json({
+        status: 'ok',
+        count: productsList.length,
+        feedUrl: `${baseUrl}/api/feeds/google-merchant.xml`,
+        products: productsList
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // 1. Direct Server-Side Order Creation (e.g. Bank Transfer / EFT)

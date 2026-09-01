@@ -25,6 +25,10 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isAuthModalOpen: boolean;
+  authModalPrompt?: { title?: string; message?: string };
+  openAuthModal: (message?: string, title?: string) => void;
+  closeAuthModal: () => void;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   loginWithGoogle: () => Promise<any>;
   registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
@@ -44,6 +48,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalPrompt, setAuthModalPrompt] = useState<{ title?: string; message?: string } | undefined>(undefined);
+
+  const openAuthModal = (message?: string, title?: string) => {
+    setAuthModalPrompt(message ? { message, title } : undefined);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+    setAuthModalPrompt(undefined);
+  };
 
   // Clean any old local storage overrides
   useEffect(() => {
@@ -305,6 +321,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       loading,
       isAdmin,
+      isAuthModalOpen,
+      authModalPrompt,
+      openAuthModal,
+      closeAuthModal,
       loginWithEmail,
       loginWithGoogle,
       registerWithEmail,

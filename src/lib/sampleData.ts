@@ -37,11 +37,11 @@ export const SAMPLE_CATEGORIES: Omit<Category, 'id'>[] = [
 
 export const SAMPLE_BANNERS: Omit<HeroBanner, 'id'>[] = [
   {
-    title: 'IŞIĞIN HEYKELSİ ZARAFETİ',
-    subtitle: 'Masif pirinç, İtalyan mermeri ve sıcak amber camın zamansız buluşması.',
+    title: 'ASTRONOT KOZMİK ÇOCUK MASA LAMBASI',
+    subtitle: 'Göz dostu sıcak LED aydınlatma ve masalsı heykelsi astronot tasarımı.',
     buttonText: 'Hemen Satın Al',
     linkUrl: '#koleksiyon',
-    imageUrl: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1920&q=85',
+    imageUrl: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1920&q=85',
     active: true,
     order: 1,
     createdAt: Date.now() - 100000
@@ -61,7 +61,7 @@ export const SAMPLE_BANNERS: Omit<HeroBanner, 'id'>[] = [
     subtitle: 'Göz dostu difüzyon lensi ve sıcak dostane formlarla tasarlanmış çocuk lambaları.',
     buttonText: 'Hemen Satın Al',
     linkUrl: '#koleksiyon',
-    imageUrl: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1920&q=85',
+    imageUrl: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1920&q=85',
     active: true,
     order: 3,
     createdAt: Date.now() - 80000

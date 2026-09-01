@@ -13,6 +13,7 @@ interface HomePageProps {
   products: Product[];
   categories: Category[];
   banners: HeroBanner[];
+  bannersLoading?: boolean;
   isAdmin: boolean;
   onOpenQuickView: (product: Product) => void;
 }
@@ -21,6 +22,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   products,
   categories,
   banners,
+  bannersLoading,
   isAdmin,
   onOpenQuickView,
 }) => {
@@ -38,6 +40,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         {/* Hero Banner Slider */}
         <HeroSlider
           banners={banners}
+          isLoading={bannersLoading}
           isAdmin={isAdmin}
           onOpenAdminBanners={() => navigate('/admin/banner')}
         />

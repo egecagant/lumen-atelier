@@ -4,12 +4,14 @@ import { HeroBanner } from '../types';
 
 interface HeroSliderProps {
   banners: HeroBanner[];
+  isLoading?: boolean;
   onOpenAdminBanners?: () => void;
   isAdmin?: boolean;
 }
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({
   banners,
+  isLoading = false,
   onOpenAdminBanners,
   isAdmin,
 }) => {
@@ -20,35 +22,43 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   // Filter only active banners
   const activeBanners = banners.filter(b => b.active);
 
-  // If no banners in Firestore yet, provide default presentation
-  const displayBanners: (HeroBanner | {
-    id: string;
-    title: string;
-    subtitle: string;
-    buttonText: string;
-    linkUrl: string;
-    imageUrl: string;
-    active: boolean;
-  })[] = activeBanners.length > 0 ? activeBanners : [
+  // Auto-advance slider every 6 seconds
+  useEffect(() => {
+    if (activeBanners.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % activeBanners.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [activeBanners.length]);
+
+  // If loading and no banners yet, show sleek dark placeholder
+  if (isLoading && activeBanners.length === 0) {
+    return (
+      <section className="relative w-full aspect-[16/10] sm:aspect-[16/9] md:h-[65vh] lg:h-[70vh] min-h-[440px] sm:min-h-[480px] max-h-[800px] overflow-hidden bg-[#0D0D11] animate-pulse">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/60 to-black/80" />
+        <div className="relative z-20 w-full max-w-[1720px] mx-auto h-full px-4 sm:px-6 lg:px-8 xl:px-12 flex flex-col justify-end pb-12 sm:pb-20">
+          <div className="max-w-2xl space-y-4">
+            <div className="h-8 sm:h-14 bg-white/10 rounded-xl w-3/4" />
+            <div className="h-4 sm:h-6 bg-white/5 rounded-lg w-1/2" />
+            <div className="h-10 sm:h-12 bg-[#C5A059]/30 rounded-xl w-40 mt-2" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // If no banners exist at all in database
+  const displayBanners = activeBanners.length > 0 ? activeBanners : [
     {
-      id: 'default-1',
-      title: 'IŞIĞIN HEYKELSİ ZARAFETİ',
-      subtitle: 'El işçiliği pirinç, mermer ve üfleme cam ile mekanlarınıza ruh katan lüks aydınlatma koleksiyonları.',
+      id: 'default-lumen',
+      title: 'ÖZEL TASARIM HEYKELSİ AYDINLATMA',
+      subtitle: 'El yapımı masif malzemeler, çocuk odası lambaları ve mimari aydınlatma koleksiyonları.',
       buttonText: 'Hemen Satın Al',
       linkUrl: '#koleksiyon',
-      imageUrl: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=2000&q=85',
+      imageUrl: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=2000&q=85',
       active: true
     }
   ];
-
-  // Auto-advance slider every 6 seconds
-  useEffect(() => {
-    if (displayBanners.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % displayBanners.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [displayBanners.length]);
 
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev === 0 ? displayBanners.length - 1 : prev - 1));

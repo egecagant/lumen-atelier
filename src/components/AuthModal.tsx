@@ -8,12 +8,16 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccessAdmin?: () => void;
+  promptTitle?: string;
+  promptMessage?: string;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   onSuccessAdmin,
+  promptTitle,
+  promptMessage,
 }) => {
   const { 
     loginWithEmail, 
@@ -54,6 +58,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setTab('login');
     }
   }, [isOpen]);
+
+  // Handle ESC key and scroll lock
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, loading, onClose]);
 
   if (!isOpen) return null;
 
@@ -221,12 +242,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+    <div 
+      id="auth-modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !loading) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in cursor-default"
+    >
       {/* Hidden container for Firebase Invisible Recaptcha */}
       <div id="recaptcha-container"></div>
 
       <div 
-        className="relative w-full max-w-md bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden text-zinc-100 glass-panel"
+        className="relative w-full max-w-md bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden text-zinc-100 glass-panel my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -236,17 +265,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               LUMEN
             </span>
             <span className="text-[10px] text-[#C5A059] uppercase tracking-widest border-l border-white/10 pl-2">
-              {tab === 'forgot' ? 'Şifre Yenileme' : 'Müşteri Girişi'}
+              {promptTitle || (tab === 'forgot' ? 'Şifre Yenileme' : 'Müşteri Girişi')}
             </span>
           </div>
           <button
             id="close-auth-modal-btn"
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+            aria-label="Pencereyi Kapat"
+            title="Kapat (ESC)"
+            className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Informational Prompt Banner (e.g. for Wishlist or Checkout) */}
+        {promptMessage && (
+          <div className="mx-5 mt-4 p-3.5 bg-[#C5A059]/10 border border-[#C5A059]/30 rounded-2xl flex items-start gap-2.5 text-xs text-[#C5A059] animate-in fade-in">
+            <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
+            <span className="leading-relaxed text-zinc-200">{promptMessage}</span>
+          </div>
+        )}
 
         {/* Auth Method Switcher (E-Posta vs Telefon) */}
         {tab !== 'forgot' && (

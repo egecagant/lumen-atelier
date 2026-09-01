@@ -22,7 +22,9 @@ import { HomePage } from './pages/HomePage';
 import { CategoryPage } from './pages/CategoryPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CheckoutPage } from './pages/CheckoutPage';
+import { GuestCheckoutPage } from './pages/GuestCheckoutPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { WishlistPage } from './pages/WishlistPage';
 import { CustomDesignPage } from './pages/CustomDesignPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { AdminPage } from './pages/AdminPage';
@@ -72,21 +74,60 @@ function loadCachedOrders(): Order[] {
   return [];
 }
 
+function loadCachedBanners(): HeroBanner[] {
+  try {
+    const raw = localStorage.getItem('lumen_banners_backup');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Could not read cached banners:', e);
+  }
+  return [];
+}
+
+function loadCachedCategories(): Category[] {
+  try {
+    const raw = localStorage.getItem('lumen_categories_backup');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Could not read cached categories:', e);
+  }
+  return [];
+}
+
+function loadCachedProducts(): Product[] {
+  try {
+    const raw = localStorage.getItem('lumen_products_backup');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Could not read cached products:', e);
+  }
+  return [];
+}
+
 function MainApp() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isAuthModalOpen, openAuthModal, closeAuthModal, authModalPrompt } = useAuth();
 
-  // Firestore Real-time Collections State
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [banners, setBanners] = useState<HeroBanner[]>([]);
+  // Firestore Real-time Collections State with instant local cache
+  const [products, setProducts] = useState<Product[]>(loadCachedProducts);
+  const [categories, setCategories] = useState<Category[]>(loadCachedCategories);
+  const [banners, setBanners] = useState<HeroBanner[]>(loadCachedBanners);
+  const [bannersLoading, setBannersLoading] = useState<boolean>(() => loadCachedBanners().length === 0);
   const [orders, setOrders] = useState<Order[]>(loadCachedOrders);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
 
   // Modals
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -101,7 +142,13 @@ function MainApp() {
         snapshot.forEach((doc) => {
           prods.push({ id: doc.id, ...doc.data() } as Product);
         });
-        setProducts(prods.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
+        const sorted = prods.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        setProducts(sorted);
+        try {
+          localStorage.setItem('lumen_products_backup', JSON.stringify(sorted));
+        } catch (err) {
+          // ignore quota
+        }
       }, (error) => {
         console.warn('Products onSnapshot error:', error);
       });
@@ -120,7 +167,13 @@ function MainApp() {
         snapshot.forEach((doc) => {
           cats.push({ id: doc.id, ...doc.data() } as Category);
         });
-        setCategories(cats.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        const sorted = cats.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setCategories(sorted);
+        try {
+          localStorage.setItem('lumen_categories_backup', JSON.stringify(sorted));
+        } catch (err) {
+          // ignore quota
+        }
       }, (error) => {
         console.warn('Categories onSnapshot error:', error);
       });
@@ -139,13 +192,22 @@ function MainApp() {
         snapshot.forEach((doc) => {
           bans.push({ id: doc.id, ...doc.data() } as HeroBanner);
         });
-        setBanners(bans.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        const sorted = bans.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setBanners(sorted);
+        setBannersLoading(false);
+        try {
+          localStorage.setItem('lumen_banners_backup', JSON.stringify(sorted));
+        } catch (err) {
+          // ignore quota
+        }
       }, (error) => {
         console.warn('Banners onSnapshot error:', error);
+        setBannersLoading(false);
       });
       return () => unsubscribe();
     } catch (e) {
       console.warn('Banners subscription fallback:', e);
+      setBannersLoading(false);
     }
   }, []);
 
@@ -224,6 +286,18 @@ function MainApp() {
     setIsCheckoutOpen(true);
   };
 
+  // Close search with ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isSearchOpen) {
+        setIsSearchOpen(false);
+        setSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen]);
+
   // Search Results Filter
   const searchResults = searchQuery.trim()
     ? products.filter(p => 
@@ -250,7 +324,7 @@ function MainApp() {
               orders={orders}
               messages={messages}
               onOpenQuickView={(prod) => setQuickViewProduct(prod)}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
             />
           }
         />
@@ -264,7 +338,7 @@ function MainApp() {
               orders={orders}
               messages={messages}
               onOpenQuickView={(prod) => setQuickViewProduct(prod)}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
             />
           }
         />
@@ -275,7 +349,7 @@ function MainApp() {
           element={
             <StoreLayout
               categories={categories}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
               onOpenSearch={() => setIsSearchOpen(true)}
               isAdmin={isAdmin}
             >
@@ -283,6 +357,7 @@ function MainApp() {
                 products={products}
                 categories={categories}
                 banners={banners}
+                bannersLoading={bannersLoading}
                 isAdmin={isAdmin}
                 onOpenQuickView={(prod) => setQuickViewProduct(prod)}
               />
@@ -296,7 +371,7 @@ function MainApp() {
           element={
             <StoreLayout
               categories={categories}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
               onOpenSearch={() => setIsSearchOpen(true)}
               isAdmin={isAdmin}
             >
@@ -316,7 +391,7 @@ function MainApp() {
           element={
             <StoreLayout
               categories={categories}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
               onOpenSearch={() => setIsSearchOpen(true)}
               isAdmin={isAdmin}
             >
@@ -337,7 +412,7 @@ function MainApp() {
           element={
             <StoreLayout
               categories={categories}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
               onOpenSearch={() => setIsSearchOpen(true)}
               isAdmin={isAdmin}
             >
@@ -350,13 +425,40 @@ function MainApp() {
           element={<Navigate to="/odeme" replace />}
         />
 
+        {/* Dedicated Guest Checkout Page */}
+        <Route
+          path="/misafir-odeme"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <GuestCheckoutPage />
+            </StoreLayout>
+          }
+        />
+        <Route
+          path="/misafir-satin-al"
+          element={<Navigate to="/misafir-odeme" replace />}
+        />
+        <Route
+          path="/misafir-siparis"
+          element={<Navigate to="/misafir-odeme" replace />}
+        />
+        <Route
+          path="/guest-checkout"
+          element={<Navigate to="/misafir-odeme" replace />}
+        />
+
         {/* Order Success & Payment Callback Page */}
         <Route
           path="/order-success"
           element={
             <StoreLayout
               categories={categories}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
               onOpenSearch={() => setIsSearchOpen(true)}
               isAdmin={isAdmin}
             >
@@ -369,17 +471,52 @@ function MainApp() {
           element={<Navigate to="/order-success" replace />}
         />
 
+        {/* Dedicated Wishlist / Beğenilenler Page */}
+        <Route
+          path="/begenilenler"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <WishlistPage
+                products={products}
+                onOpenAuth={() => openAuthModal()}
+                onOpenQuickView={(prod) => setQuickViewProduct(prod)}
+              />
+            </StoreLayout>
+          }
+        />
+        <Route
+          path="/favoriler"
+          element={<Navigate to="/begenilenler" replace />}
+        />
+        <Route
+          path="/favorilerim"
+          element={<Navigate to="/begenilenler" replace />}
+        />
+        <Route
+          path="/wishlist"
+          element={<Navigate to="/begenilenler" replace />}
+        />
+
         {/* User Profile & Saved Addresses */}
         <Route
           path="/profil"
           element={
             <StoreLayout
               categories={categories}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
               onOpenSearch={() => setIsSearchOpen(true)}
               isAdmin={isAdmin}
             >
-              <ProfilePage onOpenAuth={() => setIsAuthModalOpen(true)} />
+              <ProfilePage 
+                onOpenAuth={() => openAuthModal()} 
+                products={products}
+                onOpenQuickView={(prod) => setQuickViewProduct(prod)}
+              />
             </StoreLayout>
           }
         />
@@ -398,7 +535,7 @@ function MainApp() {
           element={
             <StoreLayout
               categories={categories}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenAuth={() => openAuthModal()}
               onOpenSearch={() => setIsSearchOpen(true)}
               isAdmin={isAdmin}
             >
@@ -447,14 +584,28 @@ function MainApp() {
       {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={closeAuthModal}
+        promptTitle={authModalPrompt?.title}
+        promptMessage={authModalPrompt?.message}
         onSuccessAdmin={() => navigate('/admin/urunler')}
       />
 
       {/* Search Popup Modal */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start justify-center pt-20 p-4 animate-in fade-in">
-          <div className="w-full max-w-2xl bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden glass-panel">
+        <div 
+          id="search-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsSearchOpen(false);
+              setSearchQuery('');
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-start justify-center pt-20 p-4 animate-in fade-in cursor-default"
+        >
+          <div 
+            className="w-full max-w-2xl bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden glass-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-4 border-b border-white/10 flex items-center gap-3">
               <Search className="w-5 h-5 text-[#C5A059]" />
               <input
@@ -466,11 +617,14 @@ function MainApp() {
                 className="flex-1 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none"
               />
               <button
+                type="button"
+                aria-label="Aramayı Kapat"
+                title="Kapat (ESC)"
                 onClick={() => {
                   setIsSearchOpen(false);
                   setSearchQuery('');
                 }}
-                className="p-1.5 text-zinc-400 hover:text-white rounded-full transition-colors"
+                className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

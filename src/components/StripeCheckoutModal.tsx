@@ -35,7 +35,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
   directBuyItem,
 }) => {
   const { cart, subtotal: cartSubtotal, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const { 
     appliedCoupon, 
     discountAmount, 
@@ -90,6 +90,23 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
       setAddress(prev => ({ ...prev, fullName: user.displayName || '' }));
     }
   }, [user]);
+
+  // Handle ESC key and scroll lock
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, loading, onClose]);
 
   if (!isOpen) return null;
 
@@ -193,19 +210,27 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in">
+    <div 
+      id="checkout-modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !loading) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in cursor-default"
+    >
       <div 
-        className="relative w-full max-w-2xl bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden text-zinc-100 glass-panel"
+        className="relative w-full max-w-2xl bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden text-zinc-100 glass-panel my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#0A0A0A]">
+        {/* Sticky Header with prominent close button */}
+        <div className="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between bg-[#0A0A0A]/95 backdrop-blur-md sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl glass-panel border border-[#C5A059]/40 flex items-center justify-center text-[#C5A059]">
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-serif-luxury text-lg text-white uppercase tracking-wider">
+              <h2 className="font-serif-luxury text-base sm:text-lg text-white uppercase tracking-wider">
                 iyzico ile Güvenli Ödeme
               </h2>
               <div className="flex items-center gap-2 text-[11px] text-[#C5A059]">
@@ -217,9 +242,12 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
           
           <button
             id="close-checkout-btn"
+            type="button"
             onClick={onClose}
             disabled={loading}
-            className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors disabled:opacity-40"
+            aria-label="Pencereyi Kapat"
+            title="Kapat (ESC)"
+            className="p-2.5 text-zinc-300 hover:text-white rounded-full bg-white/5 hover:bg-white/15 border border-white/10 transition-colors disabled:opacity-40 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -246,16 +274,41 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
               </div>
             )}
 
+            {/* Guest / Account Info Notice */}
+            {!user && (
+              <div className="p-4 rounded-2xl bg-[#181820]/80 border border-[#C5A059]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <div className="text-white font-medium flex items-center gap-1.5">
+                    <span className="text-[#C5A059]">✨</span>
+                    <span>Misafir Olarak Satın Alıyorsunuz</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    İsim Soyisim, Telefon, Mail ve Normal Adres bilgilerinizi doldurarak hızlıca sipariş verebilirsiniz.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    openAuthModal('Kayıtlı teslimat adreslerinizi kullanmak için lütfen giriş yapın.', 'Giriş Yaparak Satın Al');
+                  }}
+                  className="px-3 py-1.5 bg-white/5 hover:bg-[#C5A059]/20 hover:text-[#C5A059] text-zinc-300 border border-white/10 hover:border-[#C5A059]/40 text-[11px] font-semibold uppercase tracking-wider rounded-lg transition-all shrink-0 cursor-pointer"
+                >
+                  Giriş Yap / Üye Ol
+                </button>
+              </div>
+            )}
+
             {/* Customer Information */}
             <div className="space-y-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#C5A059] flex items-center gap-1.5">
-                <Building className="w-3.5 h-3.5" /> 1. Teslimat & İletişim Bilgileri
+                <Building className="w-3.5 h-3.5" /> 1. Teslimat & İletişim Bilgileri {!user && '(Misafir)'}
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                    Ad Soyad *
+                    İsim Soyisim (Ad Soyad) *
                   </label>
                   <input
                     type="text"
@@ -269,7 +322,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                    E-Posta (Fatura & Sipariş Takip) *
+                    Mail Adresi (E-Posta) *
                   </label>
                   <input
                     type="email"
@@ -314,7 +367,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
 
               <div>
                 <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                  Açık Teslimat Adresi *
+                  Normal Adres (Açık Teslimat Adresi) *
                 </label>
                 <textarea
                   required
@@ -439,12 +492,12 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
             </div>
 
             {/* Submit to iyzico Button */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2.5">
               <button
                 id="submit-iyzico-checkout-btn"
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 cursor-pointer"
+                className="w-full py-4 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 cursor-pointer shadow-lg active:scale-[0.99]"
               >
                 {loading ? (
                   <>
@@ -459,7 +512,19 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
                   </>
                 )}
               </button>
-              <p className="text-[11px] text-zinc-500 text-center mt-2.5 flex items-center justify-center gap-1.5 font-light">
+
+              <button
+                id="cancel-modal-checkout-btn"
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="w-full py-3 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white border border-white/10 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Alışverişe Devam Et / Pencereyi Kapat</span>
+              </button>
+
+              <p className="text-[11px] text-zinc-500 text-center mt-1 flex items-center justify-center gap-1.5 font-light">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059]" />
                 <span>Kart bilgileriniz asla saklanmaz, iyzico 3D Secure güvencesiyle işlenir.</span>
               </p>

@@ -185,7 +185,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   contactAddressTitle: 'Showroom & Merkez',
   contactAddressText: 'Abdi İpekçi Caddesi No: 42, Nişantaşı / İstanbul',
   contactEmailTitle: 'Özel Tasarım & Sipariş İletişimi',
-  contactEmailText: 'contact@lumen-lighting.com',
+  contactEmailText: 'hello@lumenlatelier.com',
   contactPhoneTitle: 'Müşteri Hattı & WhatsApp',
   contactPhoneText: '+90 (212) 840 20 25 / +90 532 000 00 00',
   contactWorkingHoursTitle: '',
@@ -241,6 +241,9 @@ function sanitizeSettings(data: Partial<SiteSettings>): SiteSettings {
   }
   if (merged.announcementText && merged.announcementText.includes('Mimari')) {
     merged.announcementText = '✨ Tüm Türkiye’ye Ücretsiz Sigortalı Kargo | Özel Tasarım Talepleri İçin İletişime Geçin';
+  }
+  if (!merged.contactEmailText || merged.contactEmailText === 'contact@lumen-lighting.com') {
+    merged.contactEmailText = 'hello@lumenlatelier.com';
   }
 
   return merged;

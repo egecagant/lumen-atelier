@@ -14,7 +14,10 @@ import {
   Layers, 
   Plus, 
   ArrowRight,
-  Store
+  Store,
+  Heart,
+  MapPin,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -38,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin, logout } = useAuth();
-  const { totalItems, setIsCartOpen } = useCart();
+  const { totalItems, setIsCartOpen, wishlist } = useCart();
   const { settings } = useSiteSettings();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -326,26 +329,58 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Search className="w-4.5 h-4.5" />
             </button>
 
-            {/* User Account / Auth */}
+            {/* Wishlist / Beğenilenler Dedicated Nav Icon */}
+            <button
+              id="nav-wishlist-btn"
+              onClick={() => navigate('/begenilenler')}
+              className={`relative p-2 transition-colors rounded-full hover:bg-white/5 ${
+                location.pathname === '/begenilenler'
+                  ? 'text-[#C5A059] bg-white/5'
+                  : 'text-zinc-300 hover:text-[#C5A059]'
+              }`}
+              title="Beğenilenler (Favori Tasarımlarım)"
+              aria-label="Beğenilenler"
+            >
+              <Heart className={`w-4.5 h-4.5 ${location.pathname === '/begenilenler' || wishlist.length > 0 ? 'fill-[#C5A059]/20 text-[#C5A059]' : ''}`} />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#C5A059] text-black text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-md">
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
+            {/* User Account / Profil Icon */}
             <div className="relative">
               {user ? (
                 <div className="relative">
                   <button
                     id="user-profile-menu-btn"
-                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center gap-1 p-2 text-zinc-300 hover:text-[#C5A059] transition-colors rounded-full hover:bg-white/5"
-                    title={user.displayName || user.email}
+                    onClick={() => {
+                      navigate('/profil');
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setUserDropdownOpen(!userDropdownOpen);
+                    }}
+                    onMouseEnter={() => setUserDropdownOpen(true)}
+                    className={`relative flex items-center gap-1 p-2 transition-colors rounded-full hover:bg-white/5 ${
+                      location.pathname === '/profil'
+                        ? 'text-[#C5A059] bg-white/5'
+                        : 'text-zinc-300 hover:text-[#C5A059]'
+                    }`}
+                    title="Profilim & Hesap Yönetimi"
+                    aria-label="Profilim"
                   >
                     <UserIcon className="w-4.5 h-4.5" />
                   </button>
 
                   {userDropdownOpen && (
                     <div 
-                      className="absolute right-0 mt-2 w-56 bg-[#0B0B0E]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.95)] py-2 z-50 animate-in fade-in zoom-in-95"
+                      className="absolute right-0 mt-2 w-60 bg-[#0B0B0E]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.95)] py-2 z-50 animate-in fade-in zoom-in-95"
                       onMouseLeave={() => setUserDropdownOpen(false)}
                     >
                       <div className="px-4 py-2 border-b border-white/10">
-                        <p className="text-xs font-semibold text-zinc-200 truncate">{user.displayName}</p>
+                        <p className="text-xs font-semibold text-zinc-200 truncate">{user.displayName || 'LUMEN Üyesi'}</p>
                         <p className="text-[11px] text-zinc-400 truncate">{user.email || user.phone}</p>
                         {isAdmin && (
                           <span className="inline-flex items-center gap-1 text-[10px] text-[#C5A059] bg-[#C5A059]/10 px-2 py-0.5 rounded-full mt-1 font-medium border border-[#C5A059]/20">
@@ -354,16 +389,61 @@ export const Navbar: React.FC<NavbarProps> = ({
                         )}
                       </div>
 
+                      {/* Wishlist Link */}
+                      <button
+                        id="nav-user-wishlist-btn"
+                        onClick={() => {
+                          navigate('/begenilenler');
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs text-zinc-200 hover:text-[#C5A059] hover:bg-white/5 flex items-center justify-between transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400/30" />
+                          <span>Beğenilenler (Favorilerim)</span>
+                        </div>
+                        {wishlist.length > 0 && (
+                          <span className="text-[10px] font-bold bg-[#C5A059]/20 text-[#C5A059] px-1.5 py-0.5 rounded-full">
+                            {wishlist.length}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Profile & Info */}
                       <button
                         id="nav-user-profile-btn"
                         onClick={() => {
-                          navigate('/profil');
+                          navigate('/profil?tab=profile');
                           setUserDropdownOpen(false);
                         }}
                         className="w-full text-left px-4 py-2 text-xs text-zinc-200 hover:text-[#C5A059] hover:bg-white/5 flex items-center gap-2 transition-colors"
                       >
                         <UserIcon className="w-3.5 h-3.5 text-[#C5A059]" />
-                        <span>Hesabım & Profilim</span>
+                        <span>Kişisel Bilgiler & Profil</span>
+                      </button>
+
+                      {/* Saved Addresses */}
+                      <button
+                        onClick={() => {
+                          navigate('/profil?tab=addresses');
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-zinc-200 hover:text-[#C5A059] hover:bg-white/5 flex items-center gap-2 transition-colors"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>Kayıtlı Adreslerim</span>
+                      </button>
+
+                      {/* Orders */}
+                      <button
+                        onClick={() => {
+                          navigate('/profil?tab=orders');
+                          setUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-zinc-200 hover:text-[#C5A059] hover:bg-white/5 flex items-center gap-2 transition-colors"
+                      >
+                        <Package className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>Sipariş Geçmişim</span>
                       </button>
 
                       {isAdmin && (
@@ -395,10 +475,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 <button
                   id="auth-login-btn"
-                  onClick={onOpenAuth}
-                  className="p-2 text-zinc-300 hover:text-[#C5A059] transition-colors rounded-full hover:bg-white/5"
-                  aria-label="Giriş Yap"
-                  title="Giriş / Kayıt"
+                  onClick={() => {
+                    navigate('/profil');
+                  }}
+                  className={`relative p-2 transition-colors rounded-full hover:bg-white/5 ${
+                    location.pathname === '/profil'
+                      ? 'text-[#C5A059] bg-white/5'
+                      : 'text-zinc-300 hover:text-[#C5A059]'
+                  }`}
+                  aria-label="Profil ve Giriş"
+                  title="Profil & Giriş Yap"
                 >
                   <UserIcon className="w-4.5 h-4.5" />
                 </button>
@@ -467,11 +553,30 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           <div className="pt-2 flex flex-col space-y-2 border-t border-white/10">
+            {/* Wishlist Link in Mobile Menu */}
+            <button
+              onClick={() => {
+                navigate('/begenilenler');
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left text-sm text-zinc-200 hover:text-[#C5A059] py-1.5 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4 text-rose-400 fill-rose-400/30" />
+                <span>Beğenilenler (Favorilerim)</span>
+              </div>
+              {wishlist.length > 0 && (
+                <span className="text-[10px] font-bold bg-[#C5A059]/20 text-[#C5A059] px-2 py-0.5 rounded-full">
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
             {user ? (
               <div className="space-y-2 pt-1">
                 <button
                   onClick={() => {
-                    navigate('/profil');
+                    navigate('/profil?tab=profile');
                     setMobileMenuOpen(false);
                   }}
                   className="w-full text-left text-sm text-[#C5A059] font-medium py-1.5 flex items-center gap-2"

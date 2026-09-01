@@ -7,6 +7,7 @@ import { ContactSection } from '../components/ContactSection';
 import { findProductBySlug, getCategorySlug, getProductSlug } from '../lib/slugify';
 import { formatCurrency } from '../lib/format';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { 
   ChevronRight, 
@@ -46,6 +47,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
   const { addToCart, toggleWishlist, isWishlisted } = useCart();
+  const { user, openAuthModal } = useAuth();
   const { settings } = useSiteSettings();
 
   const product = productSlug ? findProductBySlug(products, productSlug) : undefined;
@@ -86,6 +88,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const isOutOfStock = product ? (product.stockStatus === 'out_of_stock' || (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)) : false;
   const category = categories.find(c => c.id === product?.categoryId);
   const isFavorite = product ? isWishlisted(product.id) : false;
+
+  const handleWishlist = () => {
+    if (!product) return;
+    toggleWishlist(product.id);
+    if (!user) {
+      openAuthModal(
+        'Beğendiğiniz el yapımı lambaları favori listenize kaydetmek ve profilinizde saklamak için lütfen giriş yapın veya ücretsiz hesap oluşturun.',
+        'Favorilere Eklemek İçin Giriş Yapın'
+      );
+    }
+  };
 
   const images = product?.images && product.images.length > 0
     ? product.images
@@ -253,7 +266,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       <Share2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => toggleWishlist(product.id)}
+                      onClick={handleWishlist}
                       className="p-2.5 rounded-full glass-panel hover:border-[#C5A059] text-zinc-400 hover:text-rose-400 transition-colors"
                       title="Favorilere Ekle"
                     >
@@ -295,13 +308,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </span>
                 </div>
 
-                {isOutOfStock ? (
+                {isOutOfStock && (
                   <span className="text-xs px-3 py-1 rounded-full font-medium bg-red-950/60 border border-red-800/60 text-red-300">
                     Tükendi
-                  </span>
-                ) : (
-                  <span className="text-xs px-3 py-1 rounded-full font-medium bg-white/5 border border-white/10 text-zinc-300">
-                    Stokta Mevcut
                   </span>
                 )}
               </div>

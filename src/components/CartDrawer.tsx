@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Sparkles, Tag, Check, AlertCircle, Plus, Minus } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Sparkles, Tag, Check, AlertCircle, Plus, Minus, UserCheck, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
@@ -325,8 +325,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                 </div>
               </div>
 
-              {/* Checkout Action Button */}
-              <div>
+              {/* Checkout Action Buttons */}
+              <div className="space-y-2">
                 <button
                   id="cart-checkout-btn"
                   onClick={() => {
@@ -337,10 +337,22 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                       navigate('/odeme');
                     }
                   }}
-                  className="w-full py-3.5 sm:py-4 bg-[#C5A059] hover:bg-[#d6b26b] active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 sm:py-4 bg-[#C5A059] hover:bg-[#d6b26b] active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
                 >
                   <span>{settings.cartCheckoutBtnText || 'Güvenli Ödeme & Adres Girişi'}</span>
                   <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  id="cart-guest-checkout-btn"
+                  onClick={() => {
+                    setIsCartOpen(false);
+                    navigate('/misafir-odeme');
+                  }}
+                  className="w-full py-2.5 bg-white/5 hover:bg-white/10 active:scale-[0.99] text-zinc-300 hover:text-white border border-white/10 hover:border-[#C5A059]/40 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-[#C5A059]" />
+                  <span>Misafir Olarak Satın Al (Hızlı Sipariş)</span>
                 </button>
               </div>
 

@@ -30,11 +30,11 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
     setEditingBanner(null);
     setErrorMessage(null);
     setFormData({
-      title: 'IŞIĞIN HEYKELSİ ZARAFETİ',
-      subtitle: 'El işçiliği pirinç, mermer ve amber camın zamansız buluşması.',
+      title: '',
+      subtitle: '',
       buttonText: 'Hemen Satın Al',
       linkUrl: '#koleksiyon',
-      imageUrl: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1920&q=85',
+      imageUrl: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1920&q=85',
       active: true,
       order: banners.length + 1
     });
@@ -294,7 +294,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Örn: IŞIĞIN HEYKELSİ ZARAFETİ"
+                  placeholder="Örn: ASTRONOT KOZMİK MASA LAMBASI"
                   className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 focus:border-[#c5a880] focus:outline-none uppercase"
                 />
               </div>

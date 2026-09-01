@@ -15,6 +15,7 @@ interface CartContextType {
   setIsCartOpen: (open: boolean) => void;
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
+  clearWishlist: () => void;
   isWishlisted: (productId: string) => boolean;
 }
 
@@ -101,6 +102,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  const clearWishlist = () => {
+    setWishlist([]);
+  };
+
   const isWishlisted = (productId: string) => wishlist.includes(productId);
 
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -125,6 +130,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsCartOpen,
       wishlist,
       toggleWishlist,
+      clearWishlist,
       isWishlisted
     }}>
       {children}

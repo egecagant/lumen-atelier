@@ -22,7 +22,8 @@ import {
   Check, 
   Percent,
   Clock,
-  HelpCircle
+  HelpCircle,
+  User
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useCart } from '../context/CartContext';
@@ -44,7 +45,7 @@ export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cart, subtotal, shipping, grandTotal, clearCart } = useCart();
-  const { user, saveAddress } = useAuth();
+  const { user, saveAddress, openAuthModal } = useAuth();
   const { 
     appliedCoupon, 
     discountAmount, 
@@ -642,6 +643,42 @@ export const CheckoutPage: React.FC = () => {
             {/* LEFT COLUMN: Customer, Address & Payment (7 Cols) */}
             <div className="lg:col-span-7 space-y-6">
               
+              {/* Guest / Account Info Banner if user is not logged in */}
+              {!user && (
+                <div className="p-5 rounded-3xl bg-gradient-to-r from-[#181820] via-[#14141A] to-[#101014] border border-[#C5A059]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-panel">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] shrink-0">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                        <span>Misafir Olarak Satın Alıyorsunuz</span>
+                        <span className="text-[10px] bg-[#C5A059]/20 text-[#C5A059] px-2 py-0.5 rounded-full font-normal">Hızlı Sipariş</span>
+                      </h4>
+                      <p className="text-xs text-zinc-400 font-light mt-0.5">
+                        Üye olmadan aşağıdaki İsim Soyisim, Telefon Numarası, Mail Adresi ve Normal Adres bilgilerinizi girerek siparişinizi tamamlayabilirsiniz.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      to="/misafir-odeme"
+                      className="px-3.5 py-2.5 bg-[#C5A059]/15 hover:bg-[#C5A059] hover:text-black text-[#C5A059] border border-[#C5A059]/30 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                    >
+                      Misafir Sayfası
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => openAuthModal('Kayıtlı teslimat adreslerinizi ve sipariş geçmişinizi kullanmak için lütfen giriş yapın veya ücretsiz hesap oluşturun.', 'Giriş Yaparak Satın Al')}
+                      className="px-4 py-2.5 bg-white/5 hover:bg-[#C5A059]/20 hover:text-[#C5A059] text-zinc-200 border border-white/10 hover:border-[#C5A059]/40 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                    >
+                      Giriş Yap / Üye Ol
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* SECTION 1: Customer Contact Info */}
               <div className="bg-[#0F0F12] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 glass-panel">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-4">
@@ -650,7 +687,7 @@ export const CheckoutPage: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-serif-luxury text-lg text-white uppercase tracking-wider">
-                      İletişim Bilgileri
+                      İletişim Bilgileri {!user && <span className="text-xs text-[#C5A059] font-normal lowercase">(misafir bilgileri)</span>}
                     </h3>
                     <p className="text-[11px] text-zinc-400">Fatura ve kargo takip SMS/e-postası bu bilgilere gönderilecektir.</p>
                   </div>
@@ -659,7 +696,7 @@ export const CheckoutPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
                     <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      Ad Soyad *
+                      İsim Soyisim (Ad Soyad) *
                     </label>
                     <input
                       type="text"
@@ -673,7 +710,7 @@ export const CheckoutPage: React.FC = () => {
 
                   <div>
                     <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      E-Posta Adresi *
+                      Mail Adresi (E-Posta) *
                     </label>
                     <input
                       type="email"

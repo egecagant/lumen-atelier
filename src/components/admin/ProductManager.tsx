@@ -14,12 +14,15 @@ import {
   Ruler, 
   Eye,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  ShoppingBag,
+  Rss
 } from 'lucide-react';
 import { Product, Category, StockStatus } from '../../types';
 import { formatCurrency, slugify } from '../../lib/format';
 import { db, COLLECTIONS, addDoc, updateDoc, deleteDoc, doc, collection, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { compressImageFiles, optimizeImageList, estimatePayloadSize } from '../../lib/imageCompressor';
+import { GoogleMerchantFeedModal } from './GoogleMerchantFeedModal';
 
 interface ProductManagerProps {
   products: Product[];
@@ -36,6 +39,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
   const [selectedCat, setSelectedCat] = useState<string>('all');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFeedModalOpen, setIsFeedModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompressingImages, setIsCompressingImages] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -257,14 +261,27 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
           </p>
         </div>
 
-        <button
-          id="admin-add-product-btn"
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-[#d4af37] hover:bg-[#e4bd43] text-black text-xs font-bold uppercase tracking-wider rounded-lg shadow-xl shadow-[#d4af37]/15 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Yeni Lamba Ekle</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            id="admin-google-merchant-feed-btn"
+            type="button"
+            onClick={() => setIsFeedModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 text-zinc-200 border border-white/15 hover:border-[#C5A059]/40 text-xs font-semibold uppercase tracking-wider rounded-lg transition-all cursor-pointer"
+          >
+            <Rss className="w-4 h-4 text-[#C5A059]" />
+            <span>Google Merchant Feed (XML)</span>
+          </button>
+
+          <button
+            id="admin-add-product-btn"
+            type="button"
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 px-5 py-3 bg-[#d4af37] hover:bg-[#e4bd43] text-black text-xs font-bold uppercase tracking-wider rounded-lg shadow-xl shadow-[#d4af37]/15 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Yeni Lamba Ekle</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter & Search Toolbar */}
@@ -728,6 +745,12 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
           </div>
         </div>
       )}
+      {/* Google Merchant Center Feed Modal */}
+      <GoogleMerchantFeedModal
+        isOpen={isFeedModalOpen}
+        onClose={() => setIsFeedModalOpen(false)}
+        products={products}
+      />
     </div>
   );
 };

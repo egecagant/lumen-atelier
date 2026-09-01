@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, 
@@ -10,7 +10,7 @@ import {
   Sparkles, 
   Ruler, 
   Layers, 
-  Zap,
+  Zap, 
   Share2,
   ChevronLeft,
   ChevronRight,
@@ -20,6 +20,7 @@ import {
 import { Product } from '../types';
 import { formatCurrency } from '../lib/format';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { getProductSlug } from '../lib/slugify';
 
@@ -36,11 +37,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 }) => {
   const navigate = useNavigate();
   const { addToCart, toggleWishlist, isWishlisted } = useCart();
+  const { user, openAuthModal } = useAuth();
   const { settings } = useSiteSettings();
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Handle ESC key and scroll lock
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (product) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [product, onClose]);
 
   if (!product) return null;
 
@@ -59,6 +78,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const currentImage = images[selectedImageIdx] || images[0];
   const isFavorite = isWishlisted(product.id);
 
+  const handleWishlist = () => {
+    toggleWishlist(product.id);
+    if (!user) {
+      openAuthModal(
+        'Beğendiğiniz el yapımı tasarım lambaları favori listenize kaydetmek ve profilinizde saklamak için lütfen giriş yapın veya ücretsiz hesap oluşturun.',
+        'Favorilere Eklemek İçin Giriş Yapın'
+      );
+    }
+  };
+
   const handleAddToCart = () => {
     if (isOutOfStock) return;
     addToCart(product, quantity);
@@ -73,17 +102,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in">
+    <div 
+      id="product-detail-modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in cursor-default"
+    >
       <div 
-        className="relative w-full max-w-5xl bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden text-zinc-100 max-h-[92vh] flex flex-col md:flex-row"
+        className="relative w-full max-w-5xl bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl overflow-hidden text-zinc-100 max-h-[92vh] flex flex-col md:flex-row my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           id="close-detail-modal-btn"
+          type="button"
           onClick={onClose}
           aria-label="Kapat"
-          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-black/60 text-zinc-400 hover:text-white hover:bg-black/90 border border-white/10 transition-colors"
+          title="Kapat (ESC)"
+          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-black/70 text-zinc-300 hover:text-white hover:bg-black/95 border border-white/15 transition-all cursor-pointer shadow-lg active:scale-95"
         >
           <X className="w-5 h-5" />
         </button>
@@ -170,7 +209,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <Share2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => toggleWishlist(product.id)}
+                    onClick={handleWishlist}
                     className="p-2 rounded-full glass-panel hover:border-[#C5A059] text-zinc-400 hover:text-rose-400 transition-colors"
                     title="Favorilere Ekle"
                   >
