@@ -3,6 +3,9 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import Iyzipay from 'iyzipay';
 import dotenv from 'dotenv';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { initializeApp, getApps } from 'firebase/app';
 import {
   getFirestore,
@@ -19,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import firebaseConfigData from './firebase-applet-config.json' with { type: 'json' };
 import { generateGoogleMerchantXml } from './src/lib/googleMerchantFeed.ts';
+import { MAINTENANCE_MODE } from './src/lib/maintenance.ts';
 
 dotenv.config();
 
@@ -78,7 +82,7 @@ function sanitizeEmail(...candidates: any[]): string {
       }
     }
   }
-  return 'musteri@lumenatelier.com';
+  return 'musteri@lumenlatelier.com';
 }
 
 // Phone validator and sanitizer (format: +905XXXXXXXXX)
@@ -417,12 +421,54 @@ async function startServer() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+  // Security headers with helmet
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+  }));
+
+  // CORS configuration allowing Cloudflare frontend domain and local/cloud-run environments
+  const allowedOrigins = [
+    'https://lumenlatelier.com',
+    'https://www.lumenlatelier.com',
+    'https://lumenatelier.com',
+    'https://www.lumenatelier.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.run.app') ||
+        origin.endsWith('.ai.studio') ||
+        origin.endsWith('.web.app') ||
+        origin.endsWith('.firebaseapp.com')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  }));
+
+  // Rate limiters for checkout and payment requests
+  const paymentLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 25,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, errorMessage: 'Kısa süre içinde çok fazla ödeme isteği gönderildi. Lütfen birkaç dakika bekleyiniz.' }
+  });
+
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({
       status: 'ok',
-      service: 'LUMEN Atelier Payment & Server Engine',
-      iyzicoBaseUrl: process.env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com',
+      service: 'LUMEN L\'atelier Engine',
       hasApiKey: !!process.env.IYZICO_API_KEY,
       time: new Date().toISOString()
     });
@@ -568,12 +614,12 @@ async function startServer() {
 
   // 1. Direct Server-Side Order Creation (e.g. Bank Transfer / EFT)
   // Securely creates orders via Firebase Web SDK with validated order payload
-  app.post('/api/orders/create', async (req, res) => {
+  app.post('/api/orders/create', paymentLimiter, async (req, res) => {
     try {
       const {
         items = [],
         customerName = 'LUMEN Müşterisi',
-        customerEmail = 'musteri@lumenatelier.com',
+        customerEmail = 'musteri@lumenlatelier.com',
         customerPhone = '+905320000000',
         address = {},
         discountCode = '',
@@ -661,12 +707,12 @@ async function startServer() {
   });
 
   // 2. Initialize iyzico Checkout Form with Server-Side Trusted Price & Coupon Verification
-  app.post('/api/iyzico/initialize', async (req, res) => {
+  app.post('/api/iyzico/initialize', paymentLimiter, async (req, res) => {
     try {
       const {
         items = [],
         customerName = 'LUMEN Müşterisi',
-        customerEmail = 'musteri@lumenatelier.com',
+        customerEmail = 'musteri@lumenlatelier.com',
         customerPhone = '+905320000000',
         address = {},
         discountCode = '',
@@ -675,8 +721,22 @@ async function startServer() {
         notes = '',
         marketingConsent = false,
         marketingConsentAt,
-        contractsAcceptedAt
+        contractsAcceptedAt,
+        frontendOrigin
       } = req.body;
+
+      // Extract client frontend URL (supports Cloudflare custom domains / Pages)
+      let clientFrontendUrl = '';
+      if (frontendOrigin && typeof frontendOrigin === 'string' && frontendOrigin.startsWith('http')) {
+        clientFrontendUrl = frontendOrigin.replace(/\/+$/, '');
+      } else if (req.get('origin') && req.get('origin')!.startsWith('http')) {
+        clientFrontendUrl = req.get('origin')!.replace(/\/+$/, '');
+      } else if (req.get('referer') && req.get('referer')!.startsWith('http')) {
+        try {
+          const refUrl = new URL(req.get('referer')!);
+          clientFrontendUrl = refUrl.origin;
+        } catch {}
+      }
 
       const codeToVerify = discountCode || appliedCoupon?.code || '';
       const {
@@ -828,6 +888,7 @@ async function startServer() {
         total: serverTotal,
         status: 'pending_payment',
         paymentMethod: 'iyzico',
+        frontendUrl: clientFrontendUrl || undefined,
         notes,
         marketingConsent: Boolean(marketingConsent),
         marketingConsentAt: marketingConsent ? (marketingConsentAt || Date.now()) : undefined,
@@ -879,7 +940,8 @@ async function startServer() {
       const conversationId = req.body?.conversationId;
 
       if (!token) {
-        return res.redirect('/order-success?status=failed&error=Geçersiz+ödeme+anahtarı');
+        const fallbackBase = getBaseAppUrl(req);
+        return res.redirect(`${fallbackBase}/order-success?status=failed&error=Geçersiz+ödeme+anahtarı`);
       }
 
       const iyzipay = getIyzipayClient();
@@ -889,14 +951,19 @@ async function startServer() {
         conversationId,
         token
       }, async (err: any, result: any) => {
+        // Load pending order to retrieve frontend redirect URL & items
+        const cachedOrder = await loadPendingOrder(token, result?.conversationId || conversationId, result?.basketId);
+        const redirectBase = (cachedOrder?.frontendUrl && typeof cachedOrder.frontendUrl === 'string' && cachedOrder.frontendUrl.startsWith('http'))
+          ? cachedOrder.frontendUrl.replace(/\/+$/, '')
+          : getBaseAppUrl(req);
+
         if (err || !result || result.status !== 'success' || result.paymentStatus !== 'SUCCESS') {
           console.error('iyzico payment verification failed:', err || result);
           const errorMsg = result?.errorMessage || 'Ödeme doğrulanamadı veya iptal edildi.';
-          return res.redirect(`/order-success?status=failed&error=${encodeURIComponent(errorMsg)}&token=${token}`);
+          return res.redirect(`${redirectBase}/order-success?status=failed&error=${encodeURIComponent(errorMsg)}&token=${token}`);
         }
 
-        // Verified SUCCESSFUL payment! Load pending order from memory or Firestore
-        const cachedOrder = await loadPendingOrder(token, result.conversationId, result.basketId);
+        // Verified SUCCESSFUL payment!
         const orderDataMissing = !cachedOrder;
 
         if (orderDataMissing) {
@@ -958,12 +1025,13 @@ async function startServer() {
         // Cleanup pending order from Map and Firestore
         await clearPendingOrder(token, result.conversationId, result.basketId);
 
-        return res.redirect(`/order-success?status=success&orderId=${orderId}&token=${token}&paymentId=${result.paymentId || ''}`);
+        return res.redirect(`${redirectBase}/order-success?status=success&orderId=${orderId}&token=${token}&paymentId=${result.paymentId || ''}`);
       });
 
     } catch (cbErr: any) {
       console.error('iyzico callback exception:', cbErr);
-      res.redirect(`/order-success?status=failed&error=${encodeURIComponent(cbErr.message || 'Ödeme işlenirken beklenmeyen bir hata oluştu.')}`);
+      const fallbackBase = getBaseAppUrl(req);
+      res.redirect(`${fallbackBase}/order-success?status=failed&error=${encodeURIComponent(cbErr.message || 'Ödeme işlenirken beklenmeyen bir hata oluştu.')}`);
     }
   });
 
@@ -988,11 +1056,27 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa'
     });
+
+    if (MAINTENANCE_MODE) {
+      app.use((req, res, next) => {
+        // Only target HTML page requests, not API endpoints or static assets
+        if (req.method === 'GET' && !req.path.startsWith('/api') && req.headers.accept?.includes('text/html')) {
+          res.status(503);
+          res.set('Retry-After', '3600');
+        }
+        next();
+      });
+    }
+
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
+      if (MAINTENANCE_MODE) {
+        res.status(503);
+        res.set('Retry-After', '3600');
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

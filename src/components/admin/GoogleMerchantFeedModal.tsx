@@ -37,7 +37,7 @@ export const GoogleMerchantFeedModal: React.FC<GoogleMerchantFeedModalProps> = (
 
   if (!isOpen) return null;
 
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://lumenatelier.com';
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://lumenlatelier.com';
   const feedUrl = `${currentOrigin}/api/feeds/google-merchant.xml`;
   const xmlContent = generateGoogleMerchantXml(products, currentOrigin);
 

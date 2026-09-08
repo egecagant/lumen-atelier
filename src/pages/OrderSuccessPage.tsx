@@ -20,6 +20,7 @@ import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { SEO } from '../components/SEO';
 import { db, doc, getDoc } from '../lib/firebase';
+import { getApiUrl } from '../lib/api';
 import { Order } from '../types';
 
 export const OrderSuccessPage: React.FC = () => {
@@ -60,7 +61,7 @@ export const OrderSuccessPage: React.FC = () => {
             setOrder({ id: snap.id, ...(snap.data() as any) });
           } else {
             // Check server status endpoint
-            const res = await fetch(`/api/iyzico/order-status/${orderId}`);
+            const res = await fetch(getApiUrl(`/api/iyzico/order-status/${orderId}`));
             const data = await res.json();
             if (data.found && data.order) {
               setOrder({ id: orderId, ...data.order });
@@ -243,7 +244,7 @@ export const OrderSuccessPage: React.FC = () => {
           {paymentId && (
             <div className="pt-2 text-[10px] font-mono text-zinc-500 flex items-center justify-between border-t border-white/5">
               <span>iyzico Referans No: {paymentId}</span>
-              <span>256-Bit SSL Onaylı</span>
+              <span>TLS / 3D Secure Onaylı</span>
             </div>
           )}
         </div>

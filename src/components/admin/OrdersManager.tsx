@@ -58,21 +58,8 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
 
   // Sync prop changes
   useEffect(() => {
-    if (initialOrders && initialOrders.length > 0) {
+    if (initialOrders) {
       setOrders(initialOrders);
-    } else {
-      // Check localStorage backup
-      try {
-        const raw = localStorage.getItem('lumen_orders_backup');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setOrders(parsed);
-          }
-        }
-      } catch (e) {
-        console.warn('Could not read localStorage backup:', e);
-      }
     }
   }, [initialOrders]);
 
@@ -94,45 +81,13 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
       });
       
       const sorted = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      
-      // Also merge with localStorage backup to ensure nothing is ever lost
-      let merged = [...sorted];
-      try {
-        const raw = localStorage.getItem('lumen_orders_backup');
-        if (raw) {
-          const localList: Order[] = JSON.parse(raw);
-          for (const localOrd of localList) {
-            if (!merged.some(m => m.id === localOrd.id)) {
-              merged.push(localOrd);
-            }
-          }
-          merged = merged.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        }
-        localStorage.setItem('lumen_orders_backup', JSON.stringify(merged));
-      } catch (e) {
-        console.warn('Backup merge error:', e);
-      }
-
-      setOrders(merged);
-      setFeedback(`${merged.length} sipariş başarıyla senkronize edildi.`);
+      setOrders(sorted);
+      setFeedback(`${sorted.length} sipariş başarıyla senkronize edildi.`);
       setTimeout(() => setFeedback(null), 3000);
     } catch (err: any) {
       console.warn('Fetch orders error:', err);
-      // Fallback to local storage
-      try {
-        const raw = localStorage.getItem('lumen_orders_backup');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            setOrders(parsed);
-            setFeedback(`Önbellekten ${parsed.length} sipariş yüklendi.`);
-            setTimeout(() => setFeedback(null), 3000);
-          }
-        }
-      } catch (e) {
-        setFeedback('Siparişler yüklenirken bağlantı hatası oluştu.');
-        setTimeout(() => setFeedback(null), 3000);
-      }
+      setFeedback('Siparişler yüklenirken bağlantı hatası oluştu.');
+      setTimeout(() => setFeedback(null), 3000);
     } finally {
       setIsRefreshing(false);
     }
@@ -140,13 +95,7 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
 
   const handleUpdateStatus = async (orderId: string, newStatus: Order['status']) => {
     // Immediate local update
-    setOrders(prev => {
-      const updated = prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
-      try {
-        localStorage.setItem('lumen_orders_backup', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
 
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder({ ...selectedOrder, status: newStatus });
@@ -168,13 +117,7 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
     const trimmed = noteText.trim();
 
     // Immediate local state update
-    setOrders(prev => {
-      const updated = prev.map(o => o.id === orderId ? { ...o, adminNote: trimmed } : o);
-      try {
-        localStorage.setItem('lumen_orders_backup', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, adminNote: trimmed } : o));
 
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder(prev => prev ? { ...prev, adminNote: trimmed } : null);
@@ -189,7 +132,7 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
       setQuickNoteOrder(null);
     } catch (err) {
       console.error('Error saving admin note in Firestore:', err);
-      setFeedback('Not yerel olarak kaydedildi.');
+      setFeedback('Not kaydedilirken hata oluştu.');
       setTimeout(() => setFeedback(null), 2500);
       setQuickNoteOrder(null);
     } finally {
@@ -203,13 +146,7 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
     setIsDeleting(true);
 
     // Immediate optimistic local update
-    setOrders(prev => {
-      const updated = prev.filter(o => o.id !== orderToDelete.id);
-      try {
-        localStorage.setItem('lumen_orders_backup', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setOrders(prev => prev.filter(o => o.id !== orderToDelete.id));
 
     if (selectedOrder && selectedOrder.id === orderToDelete.id) {
       setSelectedOrder(null);

@@ -1215,7 +1215,7 @@ export const ContentEditor: React.FC = () => {
                   value={formData.contactEmailText}
                   onChange={(e) => handleChange('contactEmailText', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-zinc-300 focus:outline-none focus:border-[#C5A059]"
-                  placeholder="hello@lumenatelier.com"
+                  placeholder="hello@lumenlatelier.com"
                 />
               </div>
 

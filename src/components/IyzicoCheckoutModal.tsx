@@ -22,6 +22,7 @@ import { useCoupons } from '../context/CouponContext';
 import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
+import { getApiUrl } from '../lib/api';
 
 interface IyzicoCheckoutModalProps {
   isOpen: boolean;
@@ -175,10 +176,11 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
         shipping,
         total,
         userId: user?.uid || 'guest',
-        notes: address.orderNote || ''
+        notes: address.orderNote || '',
+        frontendOrigin: typeof window !== 'undefined' ? window.location.origin : undefined
       };
 
-      const response = await fetch('/api/iyzico/initialize', {
+      const response = await fetch(getApiUrl('/api/iyzico/initialize'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

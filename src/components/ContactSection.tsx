@@ -55,7 +55,7 @@ export const ContactSection: React.FC = () => {
             </div>
 
             <a 
-              href={`mailto:${settings.contactEmailText || 'hello@lumenatelier.com'}`}
+              href={`mailto:${settings.contactEmailText || 'hello@lumenlatelier.com'}`}
               className="bento-card p-4 rounded-2xl flex items-start gap-3.5 border border-white/10 sm:hover:border-[#C5A059]/50 transition-colors"
             >
               <div className="p-2.5 rounded-xl bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0">
@@ -66,7 +66,7 @@ export const ContactSection: React.FC = () => {
                   {settings.contactEmailTitle || 'E-Posta İletişimi'}
                 </span>
                 <p className="text-zinc-200 font-medium text-xs sm:text-sm mt-0.5 truncate">
-                  {settings.contactEmailText || 'hello@lumenatelier.com'}
+                  {settings.contactEmailText || 'hello@lumenlatelier.com'}
                 </p>
               </div>
             </a>

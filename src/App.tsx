@@ -42,6 +42,8 @@ import { AdminPage } from './pages/AdminPage';
 import { Search, X } from 'lucide-react';
 import { formatCurrency } from './lib/format';
 import { getProductSlug } from './lib/slugify';
+import { MAINTENANCE_MODE, MAINTENANCE_BYPASS_EMAILS } from './lib/maintenance';
+import { MaintenanceScreen } from './components/MaintenanceScreen';
 
 // Analytics & tracking flag (currently false per compliance guidelines; cookie banner remains hidden until enabled)
 const ANALYTICS_ENABLED = false;
@@ -73,19 +75,6 @@ function StoreLayout({
       />
     </>
   );
-}
-
-function loadCachedOrders(): Order[] {
-  try {
-    const raw = localStorage.getItem('lumen_orders_backup');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {
-    console.warn('Could not read cached orders:', e);
-  }
-  return [];
 }
 
 function loadCachedBanners(): HeroBanner[] {
@@ -139,7 +128,7 @@ function MainApp() {
   const [categoriesLoading, setCategoriesLoading] = useState<boolean>(() => loadCachedCategories().length === 0);
   const [banners, setBanners] = useState<HeroBanner[]>(loadCachedBanners);
   const [bannersLoading, setBannersLoading] = useState<boolean>(() => loadCachedBanners().length === 0);
-  const [orders, setOrders] = useState<Order[]>(loadCachedOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
 
   // Modals
@@ -233,10 +222,14 @@ function MainApp() {
     }
   }, []);
 
-  // 4. Subscribe to Orders (Reactive to Admin & User auth state)
+  // 4. Subscribe to Orders (Admin-only for privacy & security)
   useEffect(() => {
-    let isMounted = true;
+    if (!isAdmin) {
+      setOrders([]);
+      return;
+    }
 
+    let isMounted = true;
     try {
       const q = query(collection(db, COLLECTIONS.ORDERS));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -247,20 +240,8 @@ function MainApp() {
         });
         const sorted = ords.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setOrders(sorted);
-        
-        // Cache to local storage
-        try {
-          localStorage.setItem('lumen_orders_backup', JSON.stringify(sorted));
-        } catch (e) {
-          console.warn('Could not save orders backup to localStorage:', e);
-        }
       }, (error) => {
-        // Fallback to local backup if permission is pending
-        console.warn('Orders onSnapshot error (using local cache):', error.message || error);
-        const cached = loadCachedOrders();
-        if (cached.length > 0 && isMounted) {
-          setOrders(cached);
-        }
+        console.warn('Orders onSnapshot error:', error.message || error);
       });
 
       return () => {
@@ -268,13 +249,9 @@ function MainApp() {
         unsubscribe();
       };
     } catch (e) {
-      console.warn('Orders subscription fallback:', e);
-      const cached = loadCachedOrders();
-      if (cached.length > 0) {
-        setOrders(cached);
-      }
+      console.warn('Orders subscription error:', e);
     }
-  }, [isAdmin, user]);
+  }, [isAdmin]);
 
   // 5. Subscribe to Messages (Reactive to Admin & User auth state)
   useEffect(() => {
@@ -844,18 +821,68 @@ function MainApp() {
   );
 }
 
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const { user, loading, openAuthModal, isAuthModalOpen, closeAuthModal } = useAuth();
+
+  // 1. If maintenance mode is turned off, render normal site directly
+  if (!MAINTENANCE_MODE) {
+    return <>{children}</>;
+  }
+
+  // 2. If auth is still loading, show a brief loading state to prevent flashing maintenance screen for admins
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#09090B] flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#C5A059]/20 border-t-[#C5A059] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // 3. Check if logged-in user email is in the bypass list
+  const userEmail = user?.email?.toLowerCase().trim();
+  const isBypass = !!userEmail && MAINTENANCE_BYPASS_EMAILS.some(
+    (allowed) => allowed.toLowerCase().trim() === userEmail
+  );
+
+  // 4. If bypass user is logged in, show site normally
+  if (isBypass) {
+    return (
+      <>
+        {/* Discreet indicator for admin/bypass users to know maintenance mode is active for visitors */}
+        <div className="fixed bottom-3 right-3 z-50 pointer-events-none">
+          <div className="bg-[#18181D] text-zinc-300 text-[10px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-full shadow-xl border border-[#C5A059]/40 flex items-center gap-2 pointer-events-auto">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] animate-pulse" />
+            <span>Bakım Modu Aktif (Bypass)</span>
+          </div>
+        </div>
+        {children}
+      </>
+    );
+  }
+
+  // 5. Otherwise, display maintenance screen
+  return (
+    <>
+      <MaintenanceScreen onOpenAuth={() => openAuthModal('Bypass testi için lütfen yetkili e-posta adresinizle giriş yapın.')} />
+      {isAuthModalOpen && <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />}
+    </>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
-      <SiteSettingsProvider>
-        <CouponProvider>
-          <CartProvider>
-            <BrowserRouter>
-              <MainApp />
-            </BrowserRouter>
-          </CartProvider>
-        </CouponProvider>
-      </SiteSettingsProvider>
+      <MaintenanceGate>
+        <SiteSettingsProvider>
+          <CouponProvider>
+            <CartProvider>
+              <BrowserRouter>
+                <MainApp />
+              </BrowserRouter>
+            </CartProvider>
+          </CouponProvider>
+        </SiteSettingsProvider>
+      </MaintenanceGate>
     </AuthProvider>
   );
 }

@@ -32,6 +32,7 @@ import { useCoupons } from '../context/CouponContext';
 import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
+import { getApiUrl } from '../lib/api';
 import { SEO } from '../components/SEO';
 
 const TURKISH_CITIES = [
@@ -207,10 +208,11 @@ export const GuestCheckoutPage: React.FC = () => {
           total: finalPayableTotal,
           userId: user?.uid || 'guest',
           isGuestOrder: true,
-          notes: address.orderNote || ''
+          notes: address.orderNote || '',
+          frontendOrigin: typeof window !== 'undefined' ? window.location.origin : undefined
         };
 
-        const res = await fetch('/api/iyzico/initialize', {
+        const res = await fetch(getApiUrl('/api/iyzico/initialize'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -265,7 +267,7 @@ export const GuestCheckoutPage: React.FC = () => {
         notes: address.orderNote || ''
       };
 
-      const res = await fetch('/api/orders/create', {
+      const res = await fetch(getApiUrl('/api/orders/create'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderPayload)
@@ -277,15 +279,6 @@ export const GuestCheckoutPage: React.FC = () => {
       }
 
       const completed: Order = data.order;
-
-      // Backup placed order to localStorage cache so admin panel always has access immediately
-      try {
-        const existing = JSON.parse(localStorage.getItem('lumen_orders_backup') || '[]');
-        const updated = [completed, ...existing.filter((o: Order) => o.id !== completed.id)];
-        localStorage.setItem('lumen_orders_backup', JSON.stringify(updated));
-      } catch (e) {
-        console.warn('Could not backup order to localStorage:', e);
-      }
 
       setCompletedOrder(completed);
       setStep('success');
