@@ -34,6 +34,7 @@ import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
 import { getApiUrl } from '../lib/api';
 import { SEO } from '../components/SEO';
+import { COMPANY } from '../lib/companyInfo';
 
 const TURKISH_CITIES = [
   'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Konya', 
@@ -1077,7 +1078,7 @@ export const GuestCheckoutPage: React.FC = () => {
                   <span>Havale Yapılacak Banka Hesabı</span>
                 </div>
                 <p className="text-zinc-300 font-mono text-xs">
-                  TR76 0006 2000 0001 2990 1234 56 (Garanti BBVA - LUMEN Atelier d'Art)
+                  {COMPANY.bank.iban} ({COMPANY.bank.bankName} - {COMPANY.bank.accountHolder})
                 </p>
                 <p className="text-[11px] text-zinc-400">
                   Lütfen açıklama kısmına <strong>{completedOrder.id}</strong> sipariş kodunuzu yazınız.

@@ -32,7 +32,7 @@ export const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ onOpenAuth
       <div className="w-full max-w-xl text-center my-auto py-12">
         {/* Brand Name */}
         <h1 className="font-serif-luxury text-3xl sm:text-5xl lg:text-6xl text-white tracking-[0.18em] uppercase font-light">
-          LUMEN L'atelier
+          LUMEN ATELIER
         </h1>
 
         {/* Minimalist Divider */}

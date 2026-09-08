@@ -42,6 +42,7 @@ import { getApiUrl } from '../lib/api';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
 import { SEO } from '../components/SEO';
+import { COMPANY } from '../lib/companyInfo';
 
 const TURKISH_CITIES = [
   'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya', 'Ardahan', 'Artvin',
@@ -599,15 +600,15 @@ export const CheckoutPage: React.FC = () => {
                 <div className="space-y-2.5 bg-black/50 p-4 rounded-xl border border-white/10 font-mono text-xs">
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Banka:</span>
-                    <span className="text-white font-medium">Garanti BBVA</span>
+                    <span className="text-white font-medium">{COMPANY.bank.bankName}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Alıcı:</span>
-                    <span className="text-white font-medium">LUMEN AYDINLATMA SAN. VE TİC. LTD. ŞTİ.</span>
+                    <span className="text-white font-medium">{COMPANY.bank.accountHolder}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 pt-1 border-t border-white/5">
                     <span className="text-zinc-400">IBAN:</span>
-                    <span className="text-[#C5A059] font-bold text-xs sm:text-sm select-all">TR34 0006 2000 0001 2345 6789 01</span>
+                    <span className="text-[#C5A059] font-bold text-xs sm:text-sm select-all">{COMPANY.bank.iban}</span>
                   </div>
                   <div className="flex justify-between pt-1 border-t border-white/5">
                     <span className="text-zinc-400">Ödenecek Tutar:</span>
@@ -1579,7 +1580,7 @@ export const CheckoutPage: React.FC = () => {
                               Havale / EFT ile Ödeme
                             </span>
                             <span className="text-[11px] text-zinc-400 font-light">
-                              Garanti BBVA kurumsal hesabımıza doğrudan transfer
+                              {COMPANY.bank.bankName} kurumsal hesabımıza doğrudan transfer
                             </span>
                           </div>
                         </div>
@@ -1595,8 +1596,8 @@ export const CheckoutPage: React.FC = () => {
                             <div className="text-emerald-400 font-semibold mb-1">
                               ✓ %3 Nakit Havale İndirimi ({formatCurrency(paymentDiscount)}) toplamdan düşüldü!
                             </div>
-                            <div className="text-zinc-300">Garanti BBVA: TR34 0006 2000 0001 2345 6789 01</div>
-                            <div className="text-zinc-400 text-[10px] mt-0.5">Alıcı: LUMEN AYDINLATMA SAN. VE TİC. LTD. ŞTİ.</div>
+                            <div className="text-zinc-300">{COMPANY.bank.bankName}: {COMPANY.bank.iban}</div>
+                            <div className="text-zinc-400 text-[10px] mt-0.5">Alıcı: {COMPANY.bank.accountHolder}</div>
                           </div>
                         </div>
                       )}

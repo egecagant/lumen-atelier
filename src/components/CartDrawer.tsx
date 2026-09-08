@@ -361,7 +361,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
               {/* Trust Badge */}
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-zinc-400 pt-0.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                <span className="truncate">{settings.cartSecurityBadgeText || '256-Bit SSL & 3D Secure Güvenli Altyapı'}</span>
+                <span className="truncate">{settings.cartSecurityBadgeText || 'iyzico ile 3D Secure Güvenli Ödeme Altyapısı'}</span>
               </div>
             </div>
           )}
