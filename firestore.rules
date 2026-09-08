@@ -40,10 +40,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Orders: Clients cannot create orders directly (all order creations handled by server Admin SDK).
+    // Orders: Allow creating new order (guest checkout or authenticated customer)
     // Owner of order or Admin can read; Admin can update/delete
     match /orders/{orderId} {
-      allow create: if false;
+      allow create: if request.resource.data.id == orderId 
+                    && (request.resource.data.total is int || request.resource.data.total is float)
+                    && request.resource.data.items is list;
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();
     }
@@ -54,10 +56,16 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Discount Coupons: Public read to allow coupon verification at checkout, Admin write
+    // Discount Coupons: Anyone can read to validate coupons during checkout; Only admin can write
     match /coupons/{couponId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Pending Orders: Temporary holding during iyzico 3D Secure verification flow
+    match /pending_orders/{pendingId} {
+      allow create, read, delete: if true;
+      allow update: if false;
     }
 
     // Users profiles:

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Coupon } from '../types';
+import { useAuth } from './AuthContext';
 import { 
   db, 
   COLLECTIONS, 
@@ -131,13 +132,18 @@ interface CouponContextType {
 const CouponContext = createContext<CouponContextType | undefined>(undefined);
 
 export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAdmin } = useAuth();
   const [coupons, setCoupons] = useState<Coupon[]>(loadCachedCoupons);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const hasAttemptedAutoSeed = useRef(false);
 
-  // Subscribe to coupons in Firestore with real-time updates
+  // Subscribe to coupons in Firestore with real-time updates (Admin only due to security rules)
   useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+
     let isMounted = true;
     try {
       const q = query(collection(db, COLLECTIONS.COUPONS));
@@ -205,7 +211,7 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setCoupons(fallback);
       saveCachedCoupons(fallback);
     }
-  }, []);
+  }, [isAdmin]);
 
   const calculateDiscount = (coupon: Coupon, currentSubtotal: number): number => {
     if (!coupon || currentSubtotal <= 0) return 0;

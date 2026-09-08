@@ -152,12 +152,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               to="/"
               className="group text-left flex flex-col focus:outline-none"
             >
-              <span className="font-serif-luxury text-xl sm:text-2xl tracking-[0.22em] font-semibold text-white group-hover:text-[#C5A059] transition-colors uppercase leading-none">
-                {settings.brandName || 'LUMEN'}
-              </span>
-              <span className="text-[8px] sm:text-[9px] tracking-[0.35em] text-[#C5A059] uppercase mt-0.5 font-light leading-none">
-                {settings.brandTagline || "ATELIER D'ART"}
-              </span>
+              {settings.brandLogoUrl ? (
+                <img 
+                  src={settings.brandLogoUrl} 
+                  alt={settings.brandName || 'LUMEN'} 
+                  className="h-8 sm:h-10 w-auto object-contain"
+                />
+              ) : (
+                <>
+                  <span className="font-serif-luxury text-xl sm:text-2xl tracking-[0.22em] font-semibold text-white group-hover:text-[#C5A059] transition-colors uppercase leading-none">
+                    {settings.brandName || 'LUMEN'}
+                  </span>
+                  <span className="text-[8px] sm:text-[9px] tracking-[0.35em] text-[#C5A059] uppercase mt-0.5 font-light leading-none">
+                    {settings.brandTagline || "ATELIER D'ART"}
+                  </span>
+                </>
+              )}
             </Link>
           </div>
 

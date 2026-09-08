@@ -402,7 +402,7 @@ export const CustomDesignPage: React.FC = () => {
                   </div>
 
                   <a 
-                    href={`mailto:${settings.contactEmailText || 'hello@lumenlatelier.com'}`}
+                    href={`mailto:${settings.contactEmailText || 'hello@lumenatelier.com'}`}
                     className="flex items-center gap-2.5 bento-card p-2.5 sm:p-3 rounded-xl hover:border-[#C5A059]/50 transition-colors"
                   >
                     <div className="p-1.5 rounded-lg bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0">
@@ -410,7 +410,7 @@ export const CustomDesignPage: React.FC = () => {
                     </div>
                     <div className="min-w-0">
                       <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">E-Posta</span>
-                      <p className="text-zinc-300 font-medium text-xs truncate">{settings.contactEmailText || 'hello@lumenlatelier.com'}</p>
+                      <p className="text-zinc-300 font-medium text-xs truncate">{settings.contactEmailText || 'hello@lumenatelier.com'}</p>
                     </div>
                   </a>
 

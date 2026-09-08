@@ -196,6 +196,10 @@
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/settings" },
       "description": "Customizable site text and content settings"
+    },
+    "/pending_orders/{pendingId}": {
+      "schema": { "$ref": "#/entities/order" },
+      "description": "Server-side temporary pending orders during payment checkout flow"
     }
   }
 }

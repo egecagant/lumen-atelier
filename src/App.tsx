@@ -16,21 +16,35 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
-import { StripeCheckoutModal } from './components/StripeCheckoutModal';
+import { IyzicoCheckoutModal } from './components/IyzicoCheckoutModal';
 import { AuthModal } from './components/AuthModal';
 import { HomePage } from './pages/HomePage';
 import { CategoryPage } from './pages/CategoryPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CheckoutPage } from './pages/CheckoutPage';
-import { GuestCheckoutPage } from './pages/GuestCheckoutPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { WishlistPage } from './pages/WishlistPage';
 import { CustomDesignPage } from './pages/CustomDesignPage';
+import { 
+  AboutPage, 
+  ShippingReturnsPage, 
+  PrivacyPage, 
+  DistanceSalesPage,
+  PreliminaryInfoPage,
+  WithdrawalFormPage,
+  CookiePolicyPage,
+  KvkkApplicationPage,
+  TermsOfUsePage
+} from './pages/LegalPages';
+import { CookieConsent } from './components/CookieConsent';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { AdminPage } from './pages/AdminPage';
 import { Search, X } from 'lucide-react';
 import { formatCurrency } from './lib/format';
 import { getProductSlug } from './lib/slugify';
+
+// Analytics & tracking flag (currently false per compliance guidelines; cookie banner remains hidden until enabled)
+const ANALYTICS_ENABLED = false;
 
 function StoreLayout({
   categories,
@@ -290,8 +304,7 @@ function MainApp() {
 
   // Handle direct Buy Now from quick view or detail page
   const handleInstantBuy = (product: Product, quantity: number) => {
-    setDirectBuyItem({ product, quantity });
-    setIsCheckoutOpen(true);
+    navigate('/odeme', { state: { directBuyProduct: { product, quantity } } });
   };
 
   // Close search with ESC
@@ -436,31 +449,22 @@ function MainApp() {
           element={<Navigate to="/odeme" replace />}
         />
 
-        {/* Dedicated Guest Checkout Page */}
+        {/* Dedicated Guest Checkout Redirect to Unified /odeme */}
         <Route
           path="/misafir-odeme"
-          element={
-            <StoreLayout
-              categories={categories}
-              onOpenAuth={() => openAuthModal()}
-              onOpenSearch={() => setIsSearchOpen(true)}
-              isAdmin={isAdmin}
-            >
-              <GuestCheckoutPage />
-            </StoreLayout>
-          }
+          element={<Navigate to="/odeme" replace />}
         />
         <Route
           path="/misafir-satin-al"
-          element={<Navigate to="/misafir-odeme" replace />}
+          element={<Navigate to="/odeme" replace />}
         />
         <Route
           path="/misafir-siparis"
-          element={<Navigate to="/misafir-odeme" replace />}
+          element={<Navigate to="/odeme" replace />}
         />
         <Route
           path="/guest-checkout"
-          element={<Navigate to="/misafir-odeme" replace />}
+          element={<Navigate to="/odeme" replace />}
         />
 
         {/* Order Success & Payment Callback Page */}
@@ -563,6 +567,150 @@ function MainApp() {
           element={<Navigate to="/ozel-tasarim" replace />}
         />
 
+        {/* Legal & Information Pages */}
+        <Route
+          path="/hakkimizda"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <AboutPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/hakkinda" element={<Navigate to="/hakkimizda" replace />} />
+        <Route path="/about" element={<Navigate to="/hakkimizda" replace />} />
+
+        <Route
+          path="/teslimat-ve-iade"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <ShippingReturnsPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/iade-kosullari" element={<Navigate to="/teslimat-ve-iade" replace />} />
+        <Route path="/teslimat" element={<Navigate to="/teslimat-ve-iade" replace />} />
+
+        <Route
+          path="/gizlilik-politikasi"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <PrivacyPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/gizlilik" element={<Navigate to="/gizlilik-politikasi" replace />} />
+        <Route path="/kvkk" element={<Navigate to="/gizlilik-politikasi" replace />} />
+
+        <Route
+          path="/mesafeli-satis-sozlesmesi"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <DistanceSalesPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/sozlesme" element={<Navigate to="/mesafeli-satis-sozlesmesi" replace />} />
+
+        {/* Ön Bilgilendirme Formu */}
+        <Route
+          path="/on-bilgilendirme-formu"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <PreliminaryInfoPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/on-bilgilendirme" element={<Navigate to="/on-bilgilendirme-formu" replace />} />
+
+        {/* Cayma Hakkı ve Formu */}
+        <Route
+          path="/cayma-formu"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <WithdrawalFormPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/cayma-hakki" element={<Navigate to="/cayma-formu" replace />} />
+
+        {/* Çerez Politikası */}
+        <Route
+          path="/cerez-politikasi"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <CookiePolicyPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/cerezler" element={<Navigate to="/cerez-politikasi" replace />} />
+
+        {/* KVKK Veri Sahibi Başvuru Formu */}
+        <Route
+          path="/kvkk-basvuru"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <KvkkApplicationPage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/veri-sahibi-basvuru" element={<Navigate to="/kvkk-basvuru" replace />} />
+
+        {/* Web Sitesi Kullanım Koşulları */}
+        <Route
+          path="/kullanim-kosullari"
+          element={
+            <StoreLayout
+              categories={categories}
+              onOpenAuth={() => openAuthModal()}
+              onOpenSearch={() => setIsSearchOpen(true)}
+              isAdmin={isAdmin}
+            >
+              <TermsOfUsePage />
+            </StoreLayout>
+          }
+        />
+        <Route path="/kullanim-sartlari" element={<Navigate to="/kullanim-kosullari" replace />} />
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -577,13 +725,12 @@ function MainApp() {
       {/* Cart Slide-Over Drawer */}
       <CartDrawer
         onProceedToCheckout={() => {
-          setDirectBuyItem(null);
-          setIsCheckoutOpen(true);
+          navigate('/odeme');
         }}
       />
 
-      {/* Stripe Checkout Modal */}
-      <StripeCheckoutModal
+      {/* iyzico Checkout Modal */}
+      <IyzicoCheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => {
           setIsCheckoutOpen(false);
@@ -689,6 +836,9 @@ function MainApp() {
           </div>
         </div>
       )}
+
+      {/* Cookie Consent Banner (Active when ANALYTICS_ENABLED is true) */}
+      <CookieConsent analyticsEnabled={ANALYTICS_ENABLED} />
 
     </div>
   );

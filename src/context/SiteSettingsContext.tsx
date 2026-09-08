@@ -16,6 +16,7 @@ export interface SiteSettings {
   // Brand & Identity
   brandName: string;
   brandTagline: string;
+  brandLogoUrl?: string;
   brandDescription: string;
   brandBadge: string;
   navAllProductsText: string;
@@ -113,7 +114,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   brandName: 'LUMEN',
   brandTagline: "ATELIER D'ART",
   brandDescription: 'Lüks masa lambaları, heykelsi abajurlar, çocuk serileri ve mimari aydınlatma armatürleri. Işığın sanatsal formu.',
-  brandBadge: '%100 Orijinal Tasarım & Seçkin Koleksiyon',
+  brandBadge: 'Tescilli Özgün Tasarım & Seçkin Koleksiyon',
   navAllProductsText: 'Tüm Koleksiyon',
   navCategoriesDropdownText: 'Kategoriler',
   navContactText: 'Özel Tasarım & İletişim',
@@ -169,7 +170,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   productDetailWarrantyText: '2 Yıl Atölye Garantisi',
   productDetailShippingBanner: 'Özel ahşap sandıklı korumalı paketleme & ücretsiz sigortalı teslimat.',
   productDetailAddToCartText: 'Sepete Ekle',
-  productDetailInstantCheckoutText: 'Hemen Al & Stripe ile Güvenli Öde',
+  productDetailInstantCheckoutText: 'Hemen Al & 3D Secure ile Güvenli Öde',
 
   cartTitle: 'Alışveriş Sepeti',
   cartEmptyTitle: 'Sepetiniz Boş',
@@ -177,15 +178,15 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   cartEmptyBtnText: 'Koleksiyonu İncele',
   cartFreeShippingReachedText: 'Tebrikler! Siparişinize özel ücretsiz sigortalı kargo uygulandı.',
   cartCheckoutBtnText: 'Siparişi Tamamla & Güvenli Öde',
-  cartSecurityBadgeText: '256-Bit SSL & 3D Secure Korumalı Güvenli Ödeme',
+  cartSecurityBadgeText: 'PCI-DSS Seviye 1 & 3D Secure Korumalı Güvenli Ödeme',
   
   contactBadge: 'ÖZEL TASARIM & TALEP',
   contactTitle: 'Size Özel Işık Tasarımı',
-  contactDescription: 'LUMEN olarak, mekanlarınıza ve hayallerinize uyum sağlayan kişiye özel aydınlatma tasarımları gerçekleştiriyoruz. Size özel aydınlatma tasarımı talepleriniz ve projeleriniz için ekibimizle iletişime geçebilirsiniz.',
+  contactDescription: 'LUMEN ATELIER olarak, mekanlarınıza ve hayallerinize uyum sağlayan kişiye özel aydınlatma tasarımları gerçekleştiriyoruz. Size özel aydınlatma tasarımı talepleriniz ve projeleriniz için ekibimizle iletişime geçebilirsiniz.',
   contactAddressTitle: 'Showroom & Merkez',
   contactAddressText: 'Abdi İpekçi Caddesi No: 42, Nişantaşı / İstanbul',
   contactEmailTitle: 'Özel Tasarım & Sipariş İletişimi',
-  contactEmailText: 'hello@lumenlatelier.com',
+  contactEmailText: 'hello@lumenatelier.com',
   contactPhoneTitle: 'Müşteri Hattı & WhatsApp',
   contactPhoneText: '+90 (212) 840 20 25 / +90 532 000 00 00',
   contactWorkingHoursTitle: '',
@@ -200,8 +201,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   contactSuccessText: 'Aydınlatma tasarım uzmanımız en geç 24 saat içerisinde proje detayları için sizinle irtibata geçecektir.',
   
   footerBrandText: 'Özel tasarım masa lambaları, heykelsi abajurlar, çocuk serileri ve mimari aydınlatma armatürleri. Işığın sanatsal formu.',
-  footerQualityBadge: '%100 Kalite ve Orijinal Tasarım',
-  footerCopyright: '© 2026 LUMEN Atelier. Tüm Hakları Saklıdır. Lüks Tasarım Aydınlatma.',
+  footerQualityBadge: 'Tescilli Özgün Tasarım & 2 Yıl Garanti',
+  footerCopyright: '© 2026 Ege Çağan Tokgöz (LUMEN ATELIER). Tüm Hakları Saklıdır.',
   footerCol1Title: 'Koleksiyonlar',
   footerCol2Title: 'Hizmetler & Destek',
   footerCol3Title: 'Yönetim & Güvenlik',
@@ -242,8 +243,20 @@ function sanitizeSettings(data: Partial<SiteSettings>): SiteSettings {
   if (merged.announcementText && merged.announcementText.includes('Mimari')) {
     merged.announcementText = '✨ Tüm Türkiye’ye Ücretsiz Sigortalı Kargo | Özel Tasarım Talepleri İçin İletişime Geçin';
   }
-  if (!merged.contactEmailText || merged.contactEmailText === 'contact@lumen-lighting.com') {
-    merged.contactEmailText = 'hello@lumenlatelier.com';
+  if (!merged.contactEmailText || merged.contactEmailText === 'contact@lumen-lighting.com' || merged.contactEmailText === 'hello@lumenlatelier.com') {
+    merged.contactEmailText = 'hello@lumenatelier.com';
+  }
+  if (!merged.brandName || merged.brandName === 'LUMEN ATELIER' || merged.brandName === "LUMEN L'atelier") {
+    merged.brandName = 'LUMEN';
+  }
+  if (!merged.brandTagline || merged.brandTagline === 'AYDINLATMA & TASARIM') {
+    merged.brandTagline = "ATELIER D'ART";
+  }
+  if (!merged.footerQualityBadge || merged.footerQualityBadge.includes('%100 Kalite')) {
+    merged.footerQualityBadge = 'Tescilli Özgün Tasarım & 2 Yıl Garanti';
+  }
+  if (!merged.footerCopyright || merged.footerCopyright.includes("L'atelier")) {
+    merged.footerCopyright = '© 2026 Ege Çağan Tokgöz (LUMEN ATELIER). Tüm Hakları Saklıdır.';
   }
 
   return merged;

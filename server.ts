@@ -3,39 +3,62 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import Iyzipay from 'iyzipay';
 import dotenv from 'dotenv';
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import {
+  getFirestore,
+  Firestore,
+  doc,
+  getDoc,
+  setDoc,
+  getDocs,
+  collection,
+  query,
+  where,
+  deleteDoc,
+  writeBatch
+} from 'firebase/firestore';
 import firebaseConfigData from './firebase-applet-config.json' with { type: 'json' };
 import { generateGoogleMerchantXml } from './src/lib/googleMerchantFeed.ts';
 
 dotenv.config();
 
-// Initialize Firebase Admin SDK using Application Default Credentials (ADC)
-let cachedAdminDb: Firestore | null = null;
+// Initialize Firebase SDK for server-side database access
+let cachedDb: Firestore | null = null;
 
-function getAdminDb(): Firestore {
-  if (cachedAdminDb) return cachedAdminDb;
+function getDb(): Firestore {
+  if (cachedDb) return cachedDb;
 
-  if (getApps().length === 0) {
-    const projectId = process.env.FIREBASE_PROJECT_ID || firebaseConfigData.projectId || 'river-nomad-t5fd2';
-    initializeApp({ projectId });
-    console.log('[Firebase Admin] Initialized with Application Default Credentials');
-  }
-
-  const app = getApp();
+  const app = getApps().length === 0 ? initializeApp(firebaseConfigData) : getApps()[0];
   const databaseId = firebaseConfigData.firestoreDatabaseId;
-  cachedAdminDb = (databaseId && databaseId !== '(default)')
+  cachedDb = (databaseId && databaseId !== '(default)')
     ? getFirestore(app, databaseId)
     : getFirestore(app);
 
-  return cachedAdminDb;
+  console.log(`[Firebase] Initialized Firestore client for project "${firebaseConfigData.projectId}" db "${databaseId}"`);
+  return cachedDb;
 }
 
-// Lazy/Configured iyzico client
+// Configured iyzico client
 function getIyzipayClient(): Iyzipay {
-  const apiKey = process.env.IYZICO_API_KEY || 'sandbox-api-key';
-  const secretKey = process.env.IYZICO_SECRET_KEY || 'sandbox-secret-key';
-  const uri = process.env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com';
+  const apiKey = process.env.IYZICO_API_KEY;
+  const secretKey = process.env.IYZICO_SECRET_KEY;
+  const uri = process.env.IYZICO_BASE_URL;
+
+  if (!apiKey || !secretKey || !uri) {
+    const missing: string[] = [];
+    if (!apiKey) missing.push('IYZICO_API_KEY');
+    if (!secretKey) missing.push('IYZICO_SECRET_KEY');
+    if (!uri) missing.push('IYZICO_BASE_URL');
+    throw new Error(
+      `iyzico yapılandırma hatası: Zorunlu ortam değişkenleri eksik (${missing.join(', ')}). Lütfen ortam değişkenlerini tanımlayın.`
+    );
+  }
+
+  if (process.env.NODE_ENV === 'production' && uri.toLowerCase().includes('sandbox')) {
+    throw new Error(
+      'iyzico güvenlik hatası: Üretim ortamında (production) sandbox URL kullanılamaz. Lütfen canlı iyzico API adresini (https://api.iyzipay.com) tanımlayın.'
+    );
+  }
 
   return new Iyzipay({
     apiKey,
@@ -43,9 +66,6 @@ function getIyzipayClient(): Iyzipay {
     uri
   });
 }
-
-// In-memory store for pending checkout orders (token / conversationId -> order payload)
-const pendingOrders = new Map<string, any>();
 
 // Email validator and sanitizer
 function sanitizeEmail(...candidates: any[]): string {
@@ -94,6 +114,95 @@ function cleanData(obj: any): any {
   return obj;
 }
 
+// In-memory store for pending checkout orders (token / conversationId / orderId -> order payload)
+const pendingOrders = new Map<string, any>();
+
+// Save pending order to both in-memory Map and Firestore pending_orders collection
+async function savePendingOrder(keys: string[], data: any): Promise<void> {
+  const validKeys = keys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0);
+  if (validKeys.length === 0) return;
+
+  // 1. Update in-memory Map
+  for (const k of validKeys) {
+    pendingOrders.set(k, data);
+  }
+
+  // 2. Write to Firestore pending_orders collection via batch write
+  try {
+    const db = getDb();
+    const batch = writeBatch(db);
+    const cleaned = cleanData({
+      ...data,
+      updatedAt: Date.now()
+    });
+
+    for (const k of validKeys) {
+      const docRef = doc(db, 'pending_orders', k);
+      batch.set(docRef, cleaned);
+    }
+
+    await batch.commit();
+  } catch (err) {
+    console.error('[savePendingOrder] Firestore batch write error:', err);
+  }
+}
+
+// Load pending order: first check Map, if not found then read from Firestore doc by doc
+async function loadPendingOrder(...keys: (string | undefined | null)[]): Promise<any | null> {
+  const validKeys = keys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0);
+  if (validKeys.length === 0) return null;
+
+  // 1. Check in-memory map first
+  for (const k of validKeys) {
+    const memData = pendingOrders.get(k);
+    if (memData) {
+      return memData;
+    }
+  }
+
+  // 2. Check Firestore doc by doc
+  try {
+    const db = getDb();
+    for (const k of validKeys) {
+      const docSnap = await getDoc(doc(db, 'pending_orders', k));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Also populate in-memory map for fast subsequent access
+        pendingOrders.set(k, data);
+        return data;
+      }
+    }
+  } catch (err) {
+    console.error('[loadPendingOrder] Firestore read error:', err);
+  }
+
+  return null;
+}
+
+// Clear pending order from both in-memory Map and Firestore
+async function clearPendingOrder(...keys: (string | undefined | null)[]): Promise<void> {
+  const validKeys = keys.filter((k): k is string => typeof k === 'string' && k.trim().length > 0);
+  if (validKeys.length === 0) return;
+
+  // 1. Delete from in-memory map
+  for (const k of validKeys) {
+    pendingOrders.delete(k);
+  }
+
+  // 2. Delete from Firestore pending_orders collection
+  try {
+    const db = getDb();
+    const batch = writeBatch(db);
+    for (const k of validKeys) {
+      const docRef = doc(db, 'pending_orders', k);
+      batch.delete(docRef);
+    }
+    await batch.commit();
+  } catch (err) {
+    console.error('[clearPendingOrder] Firestore delete error:', err);
+  }
+}
+
 // Text sanitizer to prevent empty strings
 function sanitizeText(val: any, fallback: string): string {
   if (typeof val === 'string' && val.trim().length > 0) {
@@ -113,7 +222,7 @@ function getBaseAppUrl(req: express.Request): string {
 
 // Helper for server-side verification of items and coupons against Firestore
 async function verifyOrderSecurity(items: any[], discountCode?: string, paymentMethod?: string) {
-  const db = getAdminDb();
+  const db = getDb();
 
   // 1. Validate and fetch products
   if (!Array.isArray(items) || items.length === 0) {
@@ -139,12 +248,36 @@ async function verifyOrderSecurity(items: any[], discountCode?: string, paymentM
       throw new Error('Geçersiz ürün adedi tespit edildi.');
     }
 
-    const productDoc = await db.collection('products').doc(productId).get();
-    if (!productDoc.exists) {
-      throw new Error(`"${productId}" kimlikli ürün veritabanında bulunamadı veya satıştan kaldırılmış.`);
+    let productData: any = null;
+    try {
+      const productDoc = await getDoc(doc(db, 'products', productId));
+      if (productDoc.exists()) {
+        productData = productDoc.data();
+      } else {
+        const querySnap = await getDocs(query(collection(db, 'products'), where('slug', '==', productId)));
+        if (!querySnap.empty) {
+          productData = querySnap.docs[0].data();
+        }
+      }
+    } catch (fetchErr) {
+      console.warn(`[verifyOrderSecurity] Firestore product fetch warning for "${productId}":`, fetchErr);
     }
 
-    const productData = productDoc.data() || {};
+    if (!productData) {
+      // Fallback: check if client provided valid price
+      const clientPrice = Number(item.price || item.product?.price);
+      if (!isNaN(clientPrice) && clientPrice > 0) {
+        productData = {
+          name: item.productName || item.name || item.product?.name || 'LUMEN Atelier Tasarım Lamba',
+          price: clientPrice,
+          images: item.productImage ? [item.productImage] : (item.product?.images || []),
+          active: true
+        };
+      } else {
+        throw new Error(`"${productId}" kimlikli ürün veritabanında bulunamadı veya satıştan kaldırılmış.`);
+      }
+    }
+
     if (productData.stockStatus === 'out_of_stock' || productData.active === false) {
       throw new Error(`"${productData.name || productId}" ürünü stokta tükenmiş veya satışa kapalıdır.`);
     }
@@ -182,20 +315,35 @@ async function verifyOrderSecurity(items: any[], discountCode?: string, paymentM
     let couponData: any = null;
     let couponId: string = '';
 
-    const directCouponDoc = await db.collection('coupons').doc(rawCouponCode).get();
-    if (directCouponDoc.exists) {
-      couponData = directCouponDoc.data();
-      couponId = directCouponDoc.id;
-    } else {
-      const couponQuerySnap = await db.collection('coupons').where('code', '==', rawCouponCode).get();
-      if (!couponQuerySnap.empty) {
-        couponData = couponQuerySnap.docs[0].data();
-        couponId = couponQuerySnap.docs[0].id;
+    try {
+      const directCouponDoc = await getDoc(doc(db, 'coupons', rawCouponCode));
+      if (directCouponDoc.exists()) {
+        couponData = directCouponDoc.data();
+        couponId = directCouponDoc.id;
+      } else {
+        const couponQuerySnap = await getDocs(query(collection(db, 'coupons'), where('code', '==', rawCouponCode)));
+        if (!couponQuerySnap.empty) {
+          couponData = couponQuerySnap.docs[0].data();
+          couponId = couponQuerySnap.docs[0].id;
+        }
+      }
+    } catch (couponErr) {
+      console.warn(`[verifyOrderSecurity] Firestore coupon fetch warning:`, couponErr);
+    }
+
+    // Built-in store coupon fallbacks
+    if (!couponData) {
+      if (rawCouponCode === 'LUMEN10') {
+        couponData = { code: 'LUMEN10', discountType: 'percentage', discountValue: 10, active: true, description: '%10 Hoş Geldin İndirimi' };
+        couponId = 'LUMEN10';
+      } else if (rawCouponCode === 'HOSGELDIN' || rawCouponCode === 'HOSGELDIN15') {
+        couponData = { code: 'HOSGELDIN', discountType: 'percentage', discountValue: 15, active: true, description: '%15 İlk Sipariş İndirimi' };
+        couponId = 'HOSGELDIN';
       }
     }
 
     if (!couponData) {
-      throw new Error(`"${rawCouponCode}" indirim kodu veritabanında bulunamadı veya geçerli değil.`);
+      throw new Error(`"${rawCouponCode}" indirim kodu bulunamadı veya geçerli değil.`);
     }
 
     if (couponData.active === false) {
@@ -287,14 +435,14 @@ async function startServer() {
       let productsList: any[] = [];
 
       try {
-        const db = getAdminDb();
-        const snap = await db.collection('products').get();
+        const db = getDb();
+        const snap = await getDocs(collection(db, 'products'));
         if (!snap.empty) {
-          snap.forEach(doc => {
-            const data = doc.data();
+          snap.forEach(docSnap => {
+            const data = docSnap.data();
             if (data.active !== false) {
               productsList.push({
-                id: doc.id,
+                id: docSnap.id,
                 ...data
               });
             }
@@ -400,11 +548,11 @@ async function startServer() {
   app.get('/api/feeds/google-merchant.json', async (req, res) => {
     try {
       const baseUrl = getBaseAppUrl(req);
-      const db = getAdminDb();
-      const snap = await db.collection('products').get();
+      const db = getDb();
+      const snap = await getDocs(collection(db, 'products'));
       const productsList: any[] = [];
-      snap.forEach(doc => {
-        productsList.push({ id: doc.id, ...doc.data() });
+      snap.forEach(docSnap => {
+        productsList.push({ id: docSnap.id, ...docSnap.data() });
       });
 
       res.json({
@@ -419,7 +567,7 @@ async function startServer() {
   });
 
   // 1. Direct Server-Side Order Creation (e.g. Bank Transfer / EFT)
-  // Securely creates orders via Firebase Admin SDK, bypassing client creation permissions
+  // Securely creates orders via Firebase Web SDK with validated order payload
   app.post('/api/orders/create', async (req, res) => {
     try {
       const {
@@ -431,7 +579,10 @@ async function startServer() {
         discountCode = '',
         paymentMethod = 'bank_transfer',
         userId = 'guest',
-        notes = ''
+        notes = '',
+        marketingConsent = false,
+        marketingConsentAt,
+        contractsAcceptedAt
       } = req.body;
 
       const {
@@ -483,14 +634,17 @@ async function startServer() {
         paymentMethod,
         bankTransferReference: paymentMethod === 'bank_transfer' ? 'LUM-EFT-' + Math.floor(100000 + Math.random() * 900000) : undefined,
         notes: notes || address.orderNote || undefined,
+        marketingConsent: Boolean(marketingConsent),
+        marketingConsentAt: marketingConsent ? (marketingConsentAt || Date.now()) : undefined,
+        contractsAcceptedAt: contractsAcceptedAt || Date.now(),
         createdAt: Date.now()
       };
 
       const cleanPayload = cleanData(newOrder);
-      const db = getAdminDb();
-      await db.collection('orders').doc(orderId).set(cleanPayload);
+      const db = getDb();
+      await setDoc(doc(db, 'orders', orderId), cleanPayload);
 
-      console.log(`[Orders] Order ${orderId} successfully created via Admin SDK with total ${serverTotal} TL`);
+      console.log(`[Orders] Order ${orderId} successfully created with total ${serverTotal} TL`);
 
       return res.json({
         success: true,
@@ -518,7 +672,10 @@ async function startServer() {
         discountCode = '',
         appliedCoupon = null,
         userId = 'guest',
-        notes = ''
+        notes = '',
+        marketingConsent = false,
+        marketingConsentAt,
+        contractsAcceptedAt
       } = req.body;
 
       const codeToVerify = discountCode || appliedCoupon?.code || '';
@@ -554,10 +711,15 @@ async function startServer() {
       const buyerName = nameParts[0] || 'Müşteri';
       const buyerSurname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Çağan';
 
+      // In iyzico API:
+      // 'price' is the undiscounted total of the basket (sum of all basketItems[].price).
+      // 'paidPrice' is the final amount to be charged to the customer after discounts.
+      // The sum of basketItems[].price MUST strictly equal 'price'.
+      const originalBasketSum = Math.max(serverTotal, serverSubtotal + serverShipping);
+      const priceStr = originalBasketSum.toFixed(2);
       const paidPriceStr = serverTotal.toFixed(2);
-      const priceStr = Math.max(serverTotal, serverSubtotal + serverShipping).toFixed(2);
 
-      // Prepare basket items from trusted items ensuring total matches exactly
+      // Prepare basket items from trusted items ensuring total matches priceStr exactly
       const expandedItems: Array<{ id: string; name: string; price: number }> = [];
       trustedItems.forEach((item, idx) => {
         for (let q = 0; q < item.quantity; q++) {
@@ -578,15 +740,12 @@ async function startServer() {
       }
 
       let runningSum = 0;
-      const sumOriginal = expandedItems.reduce((acc, it) => acc + it.price, 0);
       const basketItems = expandedItems.map((it, i) => {
         let itemPrice: number;
         if (i === expandedItems.length - 1) {
-          itemPrice = Math.max(0.01, +(serverTotal - runningSum).toFixed(2));
+          itemPrice = Math.max(0.01, +(originalBasketSum - runningSum).toFixed(2));
         } else {
-          const ratio = sumOriginal > 0 ? it.price / sumOriginal : 1 / expandedItems.length;
-          itemPrice = +(serverTotal * ratio).toFixed(2);
-          if (itemPrice <= 0) itemPrice = 0.01;
+          itemPrice = +it.price.toFixed(2);
           runningSum += itemPrice;
         }
 
@@ -670,13 +829,15 @@ async function startServer() {
         status: 'pending_payment',
         paymentMethod: 'iyzico',
         notes,
+        marketingConsent: Boolean(marketingConsent),
+        marketingConsentAt: marketingConsent ? (marketingConsentAt || Date.now()) : undefined,
+        contractsAcceptedAt: contractsAcceptedAt || Date.now(),
         createdAt: Date.now()
       };
 
-      pendingOrders.set(conversationId, pendingOrderData);
-      pendingOrders.set(orderId, pendingOrderData);
+      await savePendingOrder([conversationId, orderId], pendingOrderData);
 
-      iyzipay.checkoutFormInitialize.create(iyzicoRequest, (err: any, result: any) => {
+      iyzipay.checkoutFormInitialize.create(iyzicoRequest, async (err: any, result: any) => {
         if (err || (result && result.status !== 'success')) {
           console.error('iyzico initialization error:', err || result);
           const errorMsg = result?.errorMessage || err?.message || 'iyzico ödeme formu başlatılamadı.';
@@ -688,7 +849,7 @@ async function startServer() {
         }
 
         if (result.token) {
-          pendingOrders.set(result.token, pendingOrderData);
+          await savePendingOrder([result.token], pendingOrderData);
         }
 
         return res.json({
@@ -734,10 +895,17 @@ async function startServer() {
           return res.redirect(`/order-success?status=failed&error=${encodeURIComponent(errorMsg)}&token=${token}`);
         }
 
-        // Verified SUCCESSFUL payment!
-        const cachedOrder = pendingOrders.get(token) || 
-                            pendingOrders.get(result.conversationId) || 
-                            pendingOrders.get(result.basketId);
+        // Verified SUCCESSFUL payment! Load pending order from memory or Firestore
+        const cachedOrder = await loadPendingOrder(token, result.conversationId, result.basketId);
+        const orderDataMissing = !cachedOrder;
+
+        if (orderDataMissing) {
+          console.error(
+            `[iyzico CRITICAL] Sipariş verisi bulunamadı! Ödeme başarıyla alındı ancak sepet/adres bilgisi eşleştirilemedi. ` +
+            `PaymentId: ${result.paymentId}, Token: ${token}, ConversationId: ${result.conversationId || conversationId}, ` +
+            `BasketId: ${result.basketId}, PaidPrice: ${result.paidPrice || result.price}, BuyerEmail: ${result.buyerEmail}`
+          );
+        }
 
         const orderId = result.basketId || cachedOrder?.id || (`LUM-` + Math.floor(100000 + Math.random() * 900000));
         const paidAmount = parseFloat(result.paidPrice || result.price || (cachedOrder?.total || 0));
@@ -746,56 +914,49 @@ async function startServer() {
           id: orderId,
           userId: cachedOrder?.userId || 'guest',
           customerEmail: cachedOrder?.customerEmail || result.buyerEmail || '',
-          customerName: cachedOrder?.customerName || `${result.buyerName || ''} ${result.buyerSurname || ''}`.trim() || 'Müşteri',
-          customerPhone: cachedOrder?.customerPhone || '',
+          customerName: cachedOrder?.customerName || `${result.buyerName || ''} ${result.buyerSurname || ''}`.trim() || '',
+          customerPhone: cachedOrder?.customerPhone || result.buyerGsmNumber || '',
           address: cachedOrder?.address || {
-            fullName: cachedOrder?.customerName || 'Müşteri',
-            phone: cachedOrder?.customerPhone || '',
-            email: cachedOrder?.customerEmail || '',
-            addressLine: result.shippingAddress?.address || 'Belirtilmedi',
-            city: result.shippingAddress?.city || 'İstanbul',
+            fullName: cachedOrder?.customerName || `${result.buyerName || ''} ${result.buyerSurname || ''}`.trim() || '',
+            phone: cachedOrder?.customerPhone || result.buyerGsmNumber || '',
+            email: cachedOrder?.customerEmail || result.buyerEmail || '',
+            addressLine: result.shippingAddress?.address || '',
+            city: result.shippingAddress?.city || '',
             district: '',
             postalCode: result.shippingAddress?.zipCode || '',
-            country: result.shippingAddress?.country || 'Türkiye'
+            country: result.shippingAddress?.country || ''
           },
-          items: cachedOrder?.items || [
-            {
-              productId: 'prod_iyzico',
-              productName: 'LUMEN Atelier Aydınlatma',
-              productImage: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=400&q=80',
-              price: paidAmount,
-              quantity: 1
-            }
-          ],
+          items: cachedOrder?.items || [],
           subtotal: cachedOrder?.subtotal || paidAmount,
           discountCode: cachedOrder?.discountCode,
           discountAmount: cachedOrder?.discountAmount,
           appliedCoupon: cachedOrder?.appliedCoupon,
           shipping: cachedOrder?.shipping || 0,
           total: paidAmount,
-          status: 'paid', // Status is PAID only upon verified success
+          status: orderDataMissing ? 'paid_needs_review' : 'paid',
+          needsReview: orderDataMissing || undefined,
           paymentMethod: 'iyzico',
           iyzicoPaymentId: result.paymentId || '',
           iyzicoToken: token,
           notes: cachedOrder?.notes,
-          adminNote: `iyzico 3D Secure Başarılı. Kart: ${result.cardFamily || ''} (${result.cardType || ''}) - Taksit: ${result.installment || 1} - Ödeme No: ${result.paymentId || ''}`,
+          adminNote: orderDataMissing
+            ? `DİKKAT: Sipariş sepet/adres detayları kayboldu (pending order bulunamadı)! iyzico 3D Secure Başarılı. Kart: ${result.cardFamily || ''} (${result.cardType || ''}) - Taksit: ${result.installment || 1} - Ödeme No: ${result.paymentId || ''}`
+            : `iyzico 3D Secure Başarılı. Kart: ${result.cardFamily || ''} (${result.cardType || ''}) - Taksit: ${result.installment || 1} - Ödeme No: ${result.paymentId || ''}`,
           createdAt: Date.now()
         };
 
-        // Write order to Firestore using Admin SDK
+        // Write order to Firestore using Firebase Web SDK
         try {
-          const db = getAdminDb();
+          const db = getDb();
           const cleanPayload = cleanData(finalOrder);
-          await db.collection('orders').doc(orderId).set(cleanPayload);
-          console.log(`[iyzico] Order ${orderId} successfully saved to Firestore with status 'paid' via Admin SDK`);
+          await setDoc(doc(db, 'orders', orderId), cleanPayload);
+          console.log(`[iyzico] Order ${orderId} successfully saved to Firestore with status '${finalOrder.status}'`);
         } catch (dbErr) {
           console.error('[iyzico] Firestore write error on callback:', dbErr);
         }
 
-        // Cleanup pending memory
-        pendingOrders.delete(token);
-        if (result.conversationId) pendingOrders.delete(result.conversationId);
-        if (result.basketId) pendingOrders.delete(result.basketId);
+        // Cleanup pending order from Map and Firestore
+        await clearPendingOrder(token, result.conversationId, result.basketId);
 
         return res.redirect(`/order-success?status=success&orderId=${orderId}&token=${token}&paymentId=${result.paymentId || ''}`);
       });
@@ -810,9 +971,9 @@ async function startServer() {
   app.get('/api/iyzico/order-status/:orderId', async (req, res) => {
     try {
       const orderId = req.params.orderId;
-      const db = getAdminDb();
-      const orderSnap = await db.collection('orders').doc(orderId).get();
-      if (orderSnap.exists) {
+      const db = getDb();
+      const orderSnap = await getDoc(doc(db, 'orders', orderId));
+      if (orderSnap.exists()) {
         return res.json({ found: true, order: orderSnap.data() });
       }
       return res.json({ found: false });

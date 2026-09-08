@@ -11,6 +11,7 @@ import {
   Tag, 
   Sparkles, 
   ArrowLeft, 
+  ArrowRight,
   ShoppingBag, 
   ChevronRight, 
   AlertCircle, 
@@ -21,30 +22,43 @@ import {
   FileText, 
   Check, 
   Percent,
+  User,
+  Plus,
+  Minus,
+  Trash2,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
   Clock,
-  HelpCircle,
-  User
+  Shield,
+  Home,
+  CheckCheck
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCoupons } from '../context/CouponContext';
 import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
-import { cleanFirestoreData } from '../lib/firebase';
 import { Order, OrderAddress, Product } from '../types';
 import { SEO } from '../components/SEO';
 
 const TURKISH_CITIES = [
-  'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Konya', 
-  'Gaziantep', 'Muğla', 'Eskişehir', 'Kocaeli', 'Mersin', 'Kayseri', 
-  'Samsun', 'Balıkesir', 'Trabzon', 'Denizli', 'Aydın', 'Tekirdağ', 'Sakarya'
+  'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya', 'Ardahan', 'Artvin',
+  'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik', 'Bingöl', 'Bitlis', 'Bolu', 'Burdur',
+  'Bursa', 'Çanakkale', 'Çankırı', 'Çorum', 'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan',
+  'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul',
+  'İzmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kırıkkale', 'Kırklareli', 'Kırşehir',
+  'Kilis', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa', 'Mardin', 'Mersin', 'Muğla', 'Muş',
+  'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize', 'Sakarya', 'Samsun', 'Siirt', 'Sinop', 'Sivas',
+  'Şanlıurfa', 'Şırnak', 'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
 ];
+
+type CheckoutTab = 'cart' | 'shipping' | 'payment';
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cart, subtotal, shipping, grandTotal, clearCart } = useCart();
+  const { cart, subtotal, shipping, grandTotal, clearCart, updateQuantity, removeFromCart } = useCart();
   const { user, saveAddress, openAuthModal } = useAuth();
   const { 
     appliedCoupon, 
@@ -56,23 +70,26 @@ export const CheckoutPage: React.FC = () => {
     recordCouponUsage
   } = useCoupons();
 
-  // State for direct buy single product if passed via state
+  // Active step / category tab: Sepet -> Kargo Bilgileri -> Ödeme
+  const [activeTab, setActiveTab] = useState<CheckoutTab>('cart');
+
+  // Direct buy single product if passed via location state
   const directProduct = location.state?.directBuyProduct as { product: Product; quantity: number } | undefined;
   const items = directProduct 
-    ? [{ product: directProduct.product, quantity: directProduct.quantity }]
+    ? [{ product: directProduct.product, quantity: directProduct.quantity, selectedColor: undefined }]
     : cart;
 
   const currentSubtotal = directProduct 
     ? directProduct.product.price * directProduct.quantity 
     : subtotal;
 
-  // Recalculate discount whenever subtotal changes
+  // Recalculate coupon discount whenever subtotal changes
   useEffect(() => {
     recalculateDiscount(currentSubtotal);
   }, [currentSubtotal]);
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'bank_transfer' | 'cash_on_delivery'>('stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'iyzico' | 'bank_transfer' | 'cash_on_delivery'>('iyzico');
 
   // Coupon Input State
   const [couponInput, setCouponInput] = useState('');
@@ -86,7 +103,7 @@ export const CheckoutPage: React.FC = () => {
     addressLine: '',
     city: 'İstanbul',
     district: '',
-    postalCode: '34367',
+    postalCode: '34000',
     country: 'Türkiye',
     invoiceType: 'individual',
     companyName: '',
@@ -96,11 +113,12 @@ export const CheckoutPage: React.FC = () => {
     orderNote: ''
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string | null>(null);
   const [saveToAccount, setSaveToAccount] = useState<boolean>(false);
-  const [saveAddressTitle, setSaveAddressTitle] = useState<string>('Evim');
+  const [saveAddressTitle, setSaveAddressTitle] = useState<string>('Ev Adresim');
 
-  // Auto-populate from user or default saved address
+  // Auto-populate from user profile or saved addresses
   useEffect(() => {
     if (user) {
       const defaultAddr = user.savedAddresses?.find(a => a.isDefault) || user.savedAddresses?.[0];
@@ -149,33 +167,34 @@ export const CheckoutPage: React.FC = () => {
         taxOffice: addr.taxOffice || '',
         taxNumber: addr.taxNumber || ''
       }));
+      setFormErrors({});
     }
   };
 
-  // Credit Card Form State
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvc, setCardCvc] = useState('');
-  const [cardName, setCardName] = useState(user?.displayName || '');
-  const [termsAccepted, setTermsAccepted] = useState(true);
-
-  // Order processing state
+  // Agreements and order submission
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [step, setStep] = useState<'checkout' | 'success'>('checkout');
 
-  // Calculations
-  const shippingCost = (currentSubtotal - discountAmount > 5000 || currentSubtotal === 0) ? 0 : 250;
-  const paymentDiscount = paymentMethod === 'bank_transfer' ? Math.round((currentSubtotal - discountAmount) * 0.03) : 0;
+  // Financial Calculations
+  const shippingThreshold = 5000;
+  const isFreeShipping = (currentSubtotal - discountAmount) >= shippingThreshold || currentSubtotal === 0;
+  const shippingCost = isFreeShipping ? 0 : 250;
+  const remainingForFreeShipping = Math.max(0, shippingThreshold - (currentSubtotal - discountAmount));
+
+  // 3% discount for Wire Transfer / EFT
+  const paymentDiscount = paymentMethod === 'bank_transfer' 
+    ? Math.round((currentSubtotal - discountAmount) * 0.03) 
+    : 0;
+
   const finalPayableTotal = Math.max(0, currentSubtotal - discountAmount - paymentDiscount + shippingCost);
 
-  const handleFillTestCard = () => {
-    setCardNumber('4242 •••• •••• 4242');
-    setCardExpiry('12/28');
-    setCardCvc('888');
-    setCardName(address.fullName || 'Ege Çağan');
-  };
+  // Total items count
+  const totalItemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
+  // Coupon handlers
   const handleApplyCoupon = (targetEl?: HTMLElement | null) => {
     if (!couponInput.trim()) return;
 
@@ -194,6 +213,105 @@ export const CheckoutPage: React.FC = () => {
     setCouponFeedback(null);
   };
 
+  // Validate address form
+  const validateShippingForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    const trimmedFullName = address.fullName.trim();
+    const trimmedEmail = (address.email || user?.email || '').trim().toLowerCase();
+    const trimmedPhone = address.phone.trim();
+    const trimmedAddressLine = address.addressLine.trim();
+
+    if (!trimmedFullName || trimmedFullName.length < 3) {
+      errors.fullName = 'Lütfen ad ve soyadınızı eksiksiz giriniz.';
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      errors.email = 'Geçerli bir e-posta adresi giriniz.';
+    }
+
+    const phoneDigits = trimmedPhone.replace(/\D/g, '');
+    if (!trimmedPhone || phoneDigits.length < 10) {
+      errors.phone = 'Geçerli bir telefon numarası giriniz (en az 10 hane).';
+    }
+
+    if (!address.city) {
+      errors.city = 'Lütfen il seçiniz.';
+    }
+
+    if (!address.district.trim()) {
+      errors.district = 'Lütfen ilçe giriniz.';
+    }
+
+    if (!trimmedAddressLine || trimmedAddressLine.length < 8) {
+      errors.addressLine = 'Lütfen cadde, mahalle, sokak ve bina/kapı numaranızı yazınız.';
+    }
+
+    if (address.invoiceType === 'corporate') {
+      if (!address.companyName?.trim()) {
+        errors.companyName = 'Firma ünvanı zorunludur.';
+      }
+      if (!address.taxNumber?.trim()) {
+        errors.taxNumber = 'Vergi kimlik numarası zorunludur.';
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Step transition handlers
+  const handleTabClick = (tab: CheckoutTab) => {
+    if (tab === 'cart') {
+      setActiveTab('cart');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tab === 'shipping') {
+      if (items.length === 0) {
+        alert('Sepetinizde ürün bulunmamaktadır.');
+        return;
+      }
+      setActiveTab('shipping');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (tab === 'payment') {
+      if (items.length === 0) {
+        alert('Sepetinizde ürün bulunmamaktadır.');
+        return;
+      }
+      if (!validateShippingForm()) {
+        setActiveTab('shipping');
+        window.scrollTo({ top: 200, behavior: 'smooth' });
+        return;
+      }
+      setActiveTab('payment');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleProceedToShipping = () => {
+    if (items.length === 0) {
+      alert('Sepetinizde ürün bulunmamaktadır.');
+      return;
+    }
+    setActiveTab('shipping');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleProceedToPayment = () => {
+    if (!validateShippingForm()) {
+      window.scrollTo({ top: 200, behavior: 'smooth' });
+      return;
+    }
+    setActiveTab('payment');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Place order logic
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -203,36 +321,26 @@ export const CheckoutPage: React.FC = () => {
       return;
     }
 
+    if (!validateShippingForm()) {
+      setActiveTab('shipping');
+      window.scrollTo({ top: 200, behavior: 'smooth' });
+      return;
+    }
+
+    if (!termsAccepted) {
+      alert("Lütfen Ön Bilgilendirme Formu'nu ve Mesafeli Satış Sözleşmesi'ni onaylayınız.");
+      return;
+    }
+
     const trimmedFullName = address.fullName.trim();
     const trimmedEmail = (address.email || user?.email || '').trim().toLowerCase();
     const trimmedPhone = address.phone.trim();
     const trimmedAddressLine = address.addressLine.trim();
 
-    if (!trimmedFullName || !trimmedEmail || !trimmedPhone || !trimmedAddressLine) {
-      alert('Lütfen teslimat ve iletişim bilgilerinizi eksiksiz doldurunuz.');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      alert('Lütfen geçerli bir e-posta adresi giriniz (örn: isim@ornek.com).');
-      return;
-    }
-
-    if (address.invoiceType === 'corporate' && (!address.companyName || !address.taxNumber)) {
-      alert('Lütfen kurumsal fatura için Firma Adı ve Vergi Numarasını giriniz.');
-      return;
-    }
-
-    if (!termsAccepted) {
-      alert('Lütfen mesafeli satış sözleşmesini ve gizlilik koşullarını onaylayınız.');
-      return;
-    }
-
     setLoading(true);
 
-    // If online card payment (iyzico / stripe) is selected:
-    if (paymentMethod === 'iyzico' || paymentMethod === 'stripe') {
+    // Online Card Payment with iyzico 3D Secure
+    if (paymentMethod === 'iyzico') {
       try {
         const payload = {
           items: items.map(item => ({
@@ -264,7 +372,10 @@ export const CheckoutPage: React.FC = () => {
           shipping: shippingCost,
           total: finalPayableTotal,
           userId: user?.uid || 'guest',
-          notes: address.orderNote || ''
+          notes: address.orderNote || '',
+          marketingConsent,
+          marketingConsentAt: marketingConsent ? Date.now() : undefined,
+          contractsAcceptedAt: Date.now()
         };
 
         const res = await fetch('/api/iyzico/initialize', {
@@ -279,7 +390,7 @@ export const CheckoutPage: React.FC = () => {
           throw new Error(data.errorMessage || 'iyzico ödeme oturumu başlatılamadı.');
         }
 
-        // Auto-save address to user profile if requested
+        // Auto-save address to user profile if user is logged in and opted in
         if (user && saveToAccount && address.addressLine) {
           try {
             await saveAddress({
@@ -318,7 +429,7 @@ export const CheckoutPage: React.FC = () => {
       }
     }
 
-    // Bank transfer or other non-online payment methods
+    // Bank transfer or Cash on Delivery
     try {
       const orderPayload = {
         userId: user?.uid || 'guest',
@@ -342,7 +453,10 @@ export const CheckoutPage: React.FC = () => {
         })),
         discountCode: appliedCoupon?.code,
         paymentMethod,
-        notes: address.orderNote || ''
+        notes: address.orderNote || '',
+        marketingConsent,
+        marketingConsentAt: marketingConsent ? Date.now() : undefined,
+        contractsAcceptedAt: Date.now()
       };
 
       const res = await fetch('/api/orders/create', {
@@ -358,7 +472,7 @@ export const CheckoutPage: React.FC = () => {
 
       const completed: Order = data.order;
 
-      // Backup placed order to localStorage cache so admin panel always has access immediately
+      // Backup placed order to localStorage cache
       try {
         const existing = JSON.parse(localStorage.getItem('lumen_orders_backup') || '[]');
         const updated = [completed, ...existing.filter((o: Order) => o.id !== completed.id)];
@@ -367,7 +481,7 @@ export const CheckoutPage: React.FC = () => {
         console.warn('Could not backup order to localStorage:', e);
       }
 
-      // If user chose to save this address to their profile, save it
+      // Save address if requested
       if (user && saveToAccount && address.addressLine) {
         try {
           await saveAddress({
@@ -392,986 +506,1322 @@ export const CheckoutPage: React.FC = () => {
       setCompletedOrder(completed);
       setStep('success');
 
-      // Record coupon usage if coupon was applied
       if (appliedCoupon) {
         recordCouponUsage(appliedCoupon.id).catch((e) => console.warn('Could not record coupon usage:', e));
       }
 
-      // Clear cart
       if (!directProduct) {
         clearCart();
       }
 
-      // Confetti celebration
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.55 },
-        colors: ['#C5A059', '#e6c34f', '#ffffff', '#a8893d']
-      });
-
+      triggerGoldConfetti();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      console.error('Order error:', err);
-      alert(err.message || 'Sipariş oluşturulurken bir hata oluştu. Lütfen tekrar deneyiniz.');
+      console.error('Order creation error:', err);
+      alert(err.message || 'Sipariş oluşturulurken bir hata oluştu.');
     } finally {
       setLoading(false);
     }
   };
 
-  // If cart is empty and not direct buy and not in success step
-  if (items.length === 0 && step !== 'success') {
+  // Category-like Step tabs definition
+  const stepTabs: { id: CheckoutTab; title: string; subtitle: string; icon: any; stepNumber: number }[] = [
+    {
+      id: 'cart',
+      title: 'Sepet',
+      subtitle: `${totalItemCount} Tasarım Ürünü`,
+      icon: ShoppingBag,
+      stepNumber: 1
+    },
+    {
+      id: 'shipping',
+      title: 'Kargo Bilgileri',
+      subtitle: address.fullName ? `${address.fullName}` : 'Teslimat & İletişim',
+      icon: Truck,
+      stepNumber: 2
+    },
+    {
+      id: 'payment',
+      title: 'Ödeme',
+      subtitle: paymentMethod === 'iyzico' 
+        ? 'Kartla 3D Güvenli Ödeme' 
+        : paymentMethod === 'bank_transfer' 
+        ? 'Havale (%3 İndirim)' 
+        : 'Kapıda VIP Ödeme',
+      icon: CreditCard,
+      stepNumber: 3
+    }
+  ];
+
+  // SUCCESS / RECEIPT SCREEN
+  if (step === 'success' && completedOrder) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] text-zinc-100 flex flex-col justify-center items-center p-4">
-        <SEO title="Ödeme & Satış Ekranı" description="LUMEN Atelier Güvenli Ödeme" />
-        <div className="max-w-md w-full text-center space-y-5 p-8 bg-[#0F0F12] border border-white/10 rounded-3xl shadow-2xl glass-panel">
-          <div className="w-16 h-16 rounded-2xl glass-panel border border-white/10 flex items-center justify-center mx-auto text-[#C5A059]">
-            <ShoppingBag className="w-8 h-8 opacity-60" />
-          </div>
-          <div>
-            <h2 className="font-serif-luxury text-2xl text-white uppercase">Sepetiniz Boş</h2>
-            <p className="text-xs text-zinc-400 mt-1 font-light">
-              Ödeme yapabilmek için lütfen önce beğendiğiniz tasarım lambayı sepetinize ekleyin.
-            </p>
-          </div>
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg transition-all"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Koleksiyonu İncele</span>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+      <>
+        <SEO title="Siparişiniz Alındı | LUMEN Atelier" description="Siparişiniz başarıyla alındı ve üretime hazırlandı." />
+        <main className="min-h-screen bg-[#0A0A0A] text-zinc-100 py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            {/* Header Success Card */}
+            <div className="text-center bg-[#0F0F12] border border-[#C5A059]/40 rounded-3xl p-8 sm:p-12 relative overflow-hidden shadow-2xl mb-8">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/10 rounded-full filter blur-3xl pointer-events-none" />
+              
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#C5A059]/15 border border-[#C5A059] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-[#C5A059]" />
+              </div>
 
-  return (
-    <div className="min-h-screen bg-[#0A0A0A] text-zinc-100">
-      <SEO title="Güvenli Ödeme & Sipariş Tamamlama" description="LUMEN Atelier Lüks Aydınlatma Satış ve Checkout Ekranı" />
-
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#0A0A0A]/95 backdrop-blur-md border-b border-white/10 px-4 sm:px-8 py-4">
-        <div className="w-full max-w-[1720px] mx-auto flex items-center justify-between">
-          <Link
-            to="/"
-            className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors text-xs font-medium"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Mağazaya Dön</span>
-          </Link>
-
-          <div className="flex items-center gap-1.5 text-emerald-400 font-medium bg-emerald-950/40 border border-emerald-800/40 px-3 py-1 rounded-full text-xs">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>256-Bit SSL Güvenli Altyapı</span>
-          </div>
-        </div>
-      </header>
-
-      {/* SUCCESS SCREEN */}
-      {step === 'success' && completedOrder && (
-        <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16 space-y-8 animate-in fade-in zoom-in-95">
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 rounded-full bg-emerald-950 border border-emerald-500/50 flex items-center justify-center mx-auto text-emerald-400">
-              <CheckCircle2 className="w-12 h-12" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-bold">
-                SİPARİŞİNİZ BAŞARIYLA ALINDI
+              <span className="inline-block text-[10px] sm:text-xs tracking-[0.3em] uppercase bg-[#C5A059] text-black font-bold px-3 py-1 rounded-full mb-3">
+                Sipariş Onaylandı
               </span>
-              <h1 className="font-serif-luxury text-3xl sm:text-4xl text-white uppercase">
-                Teşekkür Ederiz, {completedOrder.customerName}
+
+              <h1 className="font-serif-luxury text-3xl sm:text-4xl text-white mb-2">
+                Teşekkür Ederiz, {completedOrder.customerName || 'Değerli Müşterimiz'}
               </h1>
-              <p className="text-xs text-zinc-400 max-w-lg mx-auto font-light leading-relaxed">
-                Siparişiniz atölyemize iletilmiş olup usta eller tarafından ahşap korumalı sandıkta sigortalı kargo için hazırlanmaktadır.
+              <p className="text-zinc-400 text-xs sm:text-sm font-light max-w-lg mx-auto">
+                Siparişiniz başarıyla alındı. Özel heykelsi aydınlatma tasarımlarınız özenle ahşap sandıkta paketlenerek adresinize sevk edilecektir.
               </p>
-            </div>
-          </div>
 
-          {/* Receipt Card */}
-          <div className="bg-[#0F0F12] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl glass-panel">
-            {/* Header info */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-white/10">
-              <div>
-                <span className="text-[10px] uppercase tracking-widest text-zinc-400 block">Sipariş Numarası</span>
-                <span className="font-mono text-lg font-bold text-[#C5A059]">
-                  #{completedOrder.id.substring(0, 10).toUpperCase()}
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] uppercase tracking-widest text-zinc-400 block">Sipariş Tarihi</span>
-                <span className="text-xs font-semibold text-zinc-200">{formatDate(completedOrder.createdAt)}</span>
-              </div>
-            </div>
-
-            {/* Bank Transfer Alert if applicable */}
-            {completedOrder.paymentMethod === 'bank_transfer' && (
-              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-xs space-y-2 text-amber-200">
-                <div className="flex items-center gap-2 font-bold text-amber-300">
-                  <Building2 className="w-4 h-4" />
-                  <span>Havale / EFT Ödeme Talimatı</span>
+              <div className="mt-6 inline-flex flex-col sm:flex-row items-center gap-3 bg-black/40 border border-white/10 rounded-2xl px-5 py-3">
+                <div className="text-left">
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">Sipariş Takip Kodu</div>
+                  <div className="font-mono text-sm sm:text-base font-bold text-[#C5A059] tracking-wider">{completedOrder.id}</div>
                 </div>
-                <p className="text-[11px] text-amber-200/80">
-                  Lütfen <span className="font-bold text-white">{formatCurrency(completedOrder.total)}</span> tutarını aşağıdaki IBAN hesabımıza açıklama kısmına <span className="font-mono font-bold text-white">{completedOrder.bankTransferReference || completedOrder.id.substring(0, 8)}</span> yazarak 2 iş günü içinde transfer ediniz.
+                <div className="hidden sm:block w-px h-8 bg-white/10" />
+                <div className="text-left">
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">Tarih</div>
+                  <div className="text-xs sm:text-sm text-zinc-200">{formatDate(completedOrder.createdAt)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bank Transfer Instructions if Selected */}
+            {completedOrder.paymentMethod === 'bank_transfer' && (
+              <div className="bg-[#121216] border border-[#C5A059]/40 rounded-2xl p-6 mb-8 text-left">
+                <div className="flex items-center gap-2.5 text-[#C5A059] font-serif-luxury text-lg mb-2">
+                  <Building2 className="w-5 h-5" />
+                  <span>Havale / EFT Ödeme Bilgileri</span>
+                </div>
+                <p className="text-xs text-zinc-300 font-light mb-4">
+                  Lütfen 2 iş günü içerisinde aşağıdaki banka hesabımıza sipariş kodunuzu açıklama kısmına yazarak ödemenizi gerçekleştiriniz.
                 </p>
-                <div className="p-3 bg-black/60 rounded-xl font-mono text-zinc-200 space-y-1 text-[11px]">
-                  <div><span className="text-zinc-500">Banka:</span> Garanti BBVA</div>
-                  <div><span className="text-zinc-500">Alıcı:</span> Lumen Atelier Aydınlatma Tasarım A.Ş.</div>
-                  <div><span className="text-zinc-500">IBAN:</span> TR33 0006 2000 0001 2345 6789 01</div>
+
+                <div className="space-y-2.5 bg-black/50 p-4 rounded-xl border border-white/10 font-mono text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Banka:</span>
+                    <span className="text-white font-medium">Garanti BBVA</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Alıcı:</span>
+                    <span className="text-white font-medium">LUMEN AYDINLATMA SAN. VE TİC. LTD. ŞTİ.</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 pt-1 border-t border-white/5">
+                    <span className="text-zinc-400">IBAN:</span>
+                    <span className="text-[#C5A059] font-bold text-xs sm:text-sm select-all">TR34 0006 2000 0001 2345 6789 01</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-white/5">
+                    <span className="text-zinc-400">Ödenecek Tutar:</span>
+                    <span className="text-emerald-400 font-bold">{formatCurrency(completedOrder.total)}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-white/5">
+                    <span className="text-zinc-400">Açıklama:</span>
+                    <span className="text-white font-bold select-all">{completedOrder.id}</span>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Customer & Shipping Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 rounded-2xl bg-black/40 border border-white/5 text-xs">
-              <div className="space-y-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-[#C5A059]" /> Alıcı & İletişim
-                </span>
-                <p className="font-semibold text-zinc-100">{completedOrder.customerName}</p>
-                <p className="text-zinc-400">{completedOrder.customerEmail}</p>
-                <p className="text-zinc-400">{completedOrder.customerPhone}</p>
-              </div>
+            {/* Order Details & Summary Card */}
+            <div className="bg-[#0F0F12] border border-white/10 rounded-2xl p-6 sm:p-8 space-y-6 text-left mb-8">
+              <h2 className="font-serif-luxury text-xl text-white border-b border-white/10 pb-4">
+                Sipariş Detayları
+              </h2>
 
-              <div className="space-y-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#C5A059]" /> Teslimat Adresi
-                </span>
-                <p className="text-zinc-200">{completedOrder.address.addressLine}</p>
-                <p className="text-zinc-400">
-                  {completedOrder.address.district ? `${completedOrder.address.district} / ` : ''}{completedOrder.address.city}
-                </p>
-                <p className="text-zinc-500">{completedOrder.address.postalCode} - {completedOrder.address.country}</p>
-              </div>
-            </div>
-
-            {/* Items table */}
-            <div className="space-y-3">
-              <h4 className="text-xs uppercase tracking-wider text-zinc-400 font-semibold">
-                Sipariş Edilen Tasarımlar ({completedOrder.items.reduce((acc, i) => acc + i.quantity, 0)})
-              </h4>
-              <div className="divide-y divide-white/5 border border-white/5 rounded-2xl bg-black/20 overflow-hidden">
+              {/* Items List */}
+              <div className="space-y-4">
                 {completedOrder.items.map((item, idx) => (
-                  <div key={idx} className="p-3.5 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={item.productImage} 
-                        alt="" 
-                        className="w-12 h-12 object-cover rounded-xl bg-black border border-white/10" 
-                      />
-                      <div>
-                        <h5 className="text-xs font-semibold text-zinc-200">{item.productName}</h5>
-                        <span className="text-[10px] text-zinc-400">{item.quantity} Adet × {formatCurrency(item.price)}</span>
-                      </div>
+                  <div key={idx} className="flex items-center gap-4 py-2 border-b border-white/5 last:border-0">
+                    <div className="w-14 h-14 rounded-xl bg-black/50 border border-white/10 overflow-hidden flex-shrink-0">
+                      {item.productImage ? (
+                        <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                          <ShoppingBag className="w-5 h-5" />
+                        </div>
+                      )}
                     </div>
-                    <span className="text-xs font-bold text-white font-serif-luxury">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs sm:text-sm text-white font-medium truncate">{item.productName}</h4>
+                      {item.selectedColor && (
+                        <div className="text-[11px] text-[#C5A059]">Renk: {item.selectedColor}</div>
+                      )}
+                      <div className="text-[11px] text-zinc-400 font-mono">Adet: {item.quantity} x {formatCurrency(item.price)}</div>
+                    </div>
+                    <div className="font-serif-luxury text-sm text-[#C5A059]">
                       {formatCurrency(item.price * item.quantity)}
-                    </span>
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Shipping Address Summary */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-white/10 text-xs">
+                <div>
+                  <div className="text-zinc-400 font-semibold uppercase tracking-wider mb-1">Teslimat Adresi</div>
+                  <div className="text-zinc-200 font-medium">{completedOrder.address.fullName}</div>
+                  <div className="text-zinc-400 mt-0.5">{completedOrder.address.addressLine}</div>
+                  <div className="text-zinc-400">{completedOrder.address.district} / {completedOrder.address.city}</div>
+                  <div className="text-zinc-400 mt-1">{completedOrder.address.phone}</div>
+                </div>
+                <div>
+                  <div className="text-zinc-400 font-semibold uppercase tracking-wider mb-1">Ödeme Özeti</div>
+                  <div className="space-y-1 text-zinc-300">
+                    <div className="flex justify-between">
+                      <span>Ara Toplam:</span>
+                      <span>{formatCurrency(completedOrder.subtotal)}</span>
+                    </div>
+                    {completedOrder.discountAmount ? (
+                      <div className="flex justify-between text-emerald-400">
+                        <span>İndirim ({completedOrder.discountCode}):</span>
+                        <span>-{formatCurrency(completedOrder.discountAmount)}</span>
+                      </div>
+                    ) : null}
+                    <div className="flex justify-between">
+                      <span>Kargo:</span>
+                      <span>{completedOrder.shipping === 0 ? 'ÜCRETSİZ (Özel Sandık)' : formatCurrency(completedOrder.shipping)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-bold text-white pt-1 border-t border-white/10">
+                      <span>Ödenen Toplam:</span>
+                      <span className="text-[#C5A059]">{formatCurrency(completedOrder.total)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Total Breakdown */}
-            <div className="p-4 rounded-2xl bg-black/40 space-y-2 text-xs border border-white/5">
-              <div className="flex justify-between text-zinc-400">
-                <span>Ara Toplam:</span>
-                <span className="text-zinc-200">{formatCurrency(completedOrder.subtotal)}</span>
-              </div>
-
-              {completedOrder.discountAmount ? (
-                <div className="flex justify-between text-emerald-400 font-medium">
-                  <span>Kupon İndirimi ({completedOrder.discountCode}):</span>
-                  <span>-{formatCurrency(completedOrder.discountAmount)}</span>
-                </div>
-              ) : null}
-
-              {completedOrder.paymentMethodDiscount ? (
-                <div className="flex justify-between text-emerald-400 font-medium">
-                  <span>Havale/EFT %3 Nakit İndirimi:</span>
-                  <span>-{formatCurrency(completedOrder.paymentMethodDiscount)}</span>
-                </div>
-              ) : null}
-
-              <div className="flex justify-between text-zinc-400">
-                <span>Sigortalı Özel Kargo:</span>
-                <span className="text-zinc-200">
-                  {completedOrder.shipping === 0 ? <span className="text-emerald-400 font-semibold">ÜCRETSİZ</span> : formatCurrency(completedOrder.shipping)}
-                </span>
-              </div>
-
-              <div className="pt-2.5 border-t border-white/10 flex justify-between text-sm font-bold">
-                <span className="text-zinc-100">Toplam Tutar:</span>
-                <span className="font-serif-luxury text-xl text-[#C5A059]">
-                  {formatCurrency(completedOrder.total)}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 onClick={() => window.print()}
-                className="px-5 py-3 glass-panel hover:bg-white/10 text-zinc-200 text-xs font-semibold uppercase tracking-wider rounded-xl transition-colors flex items-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-200 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <Printer className="w-4 h-4 text-[#C5A059]" />
-                <span>Sipariş Faturasını Yazdır</span>
+                <span>Yazdır / Fiş Görüntüle</span>
               </button>
 
               <button
                 onClick={() => navigate('/')}
-                className="px-6 py-3 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-[0.15em] rounded-xl shadow-lg transition-all"
+                className="w-full sm:w-auto px-8 py-3 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
               >
-                Alışverişe Devam Et
+                <ShoppingBag className="w-4 h-4" />
+                <span>Alışverişe Devam Et</span>
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </main>
+      </>
+    );
+  }
 
-      {/* CHECKOUT FLOW */}
-      {step === 'checkout' && (
-        <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
-          {/* Breadcrumb Steps */}
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest font-semibold mb-8 text-zinc-400">
-            <Link to="/" className="hover:text-zinc-200">Vitrin</Link>
+  // EMPTY STATE
+  if (items.length === 0) {
+    return (
+      <>
+        <SEO title="Sepetiniz Boş | LUMEN Atelier" description="Siparişinizi tamamlamak için sepetinize özel lamba tasarımlarımızdan ekleyin." />
+        <main className="min-h-[70vh] flex items-center justify-center bg-[#0A0A0A] text-zinc-100 px-4 py-16">
+          <div className="text-center max-w-md bg-[#0F0F12] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-xl">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 text-[#C5A059]">
+              <ShoppingBag className="w-8 h-8" />
+            </div>
+            <h2 className="font-serif-luxury text-2xl text-white mb-2">Sepetinizde Ürün Bulunmuyor</h2>
+            <p className="text-xs text-zinc-400 font-light mb-8 leading-relaxed">
+              Ödeme ve sipariş adımlarına geçebilmek için koleksiyonumuzdan benzersiz heykelsi bir aydınlatma tasarımı seçebilirsiniz.
+            </p>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full py-3.5 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Koleksiyonu Keşfet</span>
+            </button>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SEO 
+        title="Siparişi Tamamla | Güvenli Ödeme & Kargo Bilgileri" 
+        description="LUMEN ATELIER sipariş tamamlama ekranı. Sepet inceleme, teslimat adresi ve PCI-DSS Seviye 1 sertifikalı iyzico 3D Secure ödeme adımları." 
+      />
+
+      <main className="min-h-screen bg-[#0A0A0A] text-zinc-100 py-6 sm:py-10 px-3 sm:px-6 lg:px-8 xl:px-12">
+        <div className="max-w-[1500px] mx-auto">
+          
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-2 text-xs text-zinc-400 mb-6">
+            <Link to="/" className="hover:text-[#C5A059] transition-colors flex items-center gap-1">
+              <span>Ana Sayfa</span>
+            </Link>
             <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
-            <span className="text-zinc-300">Sepet</span>
+            <span className="text-zinc-200">Sipariş & Ödeme</span>
             <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
-            <span className="text-[#C5A059] font-bold">Teslimat & Ödeme</span>
+            <span className="text-[#C5A059] font-medium">
+              {activeTab === 'cart' ? '1. Sepet' : activeTab === 'shipping' ? '2. Kargo Bilgileri' : '3. Ödeme'}
+            </span>
           </div>
 
-          <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* LEFT COLUMN: Customer, Address & Payment (7 Cols) */}
-            <div className="lg:col-span-7 space-y-6">
-              
-              {/* Guest / Account Info Banner if user is not logged in */}
-              {!user && (
-                <div className="p-5 rounded-3xl bg-gradient-to-r from-[#181820] via-[#14141A] to-[#101014] border border-[#C5A059]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-panel">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-2xl bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] shrink-0">
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                        <span>Misafir Olarak Satın Alıyorsunuz</span>
-                        <span className="text-[10px] bg-[#C5A059]/20 text-[#C5A059] px-2 py-0.5 rounded-full font-normal">Hızlı Sipariş</span>
-                      </h4>
-                      <p className="text-xs text-zinc-400 font-light mt-0.5">
-                        Üye olmadan aşağıdaki İsim Soyisim, Telefon Numarası, Mail Adresi ve Normal Adres bilgilerinizi girerek siparişinizi tamamlayabilirsiniz.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link
-                      to="/misafir-odeme"
-                      className="px-3.5 py-2.5 bg-[#C5A059]/15 hover:bg-[#C5A059] hover:text-black text-[#C5A059] border border-[#C5A059]/30 text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
-                    >
-                      Misafir Sayfası
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => openAuthModal('Kayıtlı teslimat adreslerinizi ve sipariş geçmişinizi kullanmak için lütfen giriş yapın veya ücretsiz hesap oluşturun.', 'Giriş Yaparak Satın Al')}
-                      className="px-4 py-2.5 bg-white/5 hover:bg-[#C5A059]/20 hover:text-[#C5A059] text-zinc-200 border border-white/10 hover:border-[#C5A059]/40 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-                    >
-                      Giriş Yap / Üye Ol
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* SECTION 1: Customer Contact Info */}
-              <div className="bg-[#0F0F12] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 glass-panel">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                  <div className="w-8 h-8 rounded-xl bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] font-serif-luxury font-bold">
-                    1
-                  </div>
-                  <div>
-                    <h3 className="font-serif-luxury text-lg text-white uppercase tracking-wider">
-                      İletişim Bilgileri {!user && <span className="text-xs text-[#C5A059] font-normal lowercase">(misafir bilgileri)</span>}
-                    </h3>
-                    <p className="text-[11px] text-zinc-400">Fatura ve kargo takip SMS/e-postası bu bilgilere gönderilecektir.</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      İsim Soyisim (Ad Soyad) *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={address.fullName}
-                      onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
-                      placeholder="Örn: Ege Çağan"
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      Mail Adresi (E-Posta) *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={address.email}
-                      onChange={(e) => setAddress({ ...address, email: e.target.value })}
-                      placeholder="ornek@domain.com"
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      Telefon Numarası (Kargo Bilgilendirme) *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={address.phone}
-                      onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-                      placeholder="+90 (555) 000 00 00"
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                    />
-                  </div>
-                </div>
+          {/* PAGE TITLE */}
+          <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-2 text-[10px] sm:text-xs uppercase tracking-[0.25em] text-[#C5A059] font-semibold mb-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>PCI-DSS Seviye 1 • 3D Secure</span>
               </div>
-
-              {/* SECTION 2: Delivery & Invoice Address */}
-              <div className="bg-[#0F0F12] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 glass-panel">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] font-serif-luxury font-bold">
-                      2
-                    </div>
-                    <div>
-                      <h3 className="font-serif-luxury text-lg text-white uppercase tracking-wider">
-                        Teslimat ve Fatura Adresi
-                      </h3>
-                      <p className="text-[11px] text-zinc-400">Ürünleriniz özel korumalı ahşap sandık ile adrese sigortalı teslim edilir.</p>
-                    </div>
-                  </div>
-
-                  {user && (
-                    <Link
-                      to="/profil"
-                      className="hidden sm:inline-flex items-center gap-1.5 text-xs text-[#C5A059] hover:underline"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>Adreslerimi Yönet</span>
-                    </Link>
-                  )}
-                </div>
-
-                {/* SAVED ADDRESSES SELECTOR (If logged in and has saved addresses) */}
-                {user && user.savedAddresses && user.savedAddresses.length > 0 && (
-                  <div className="space-y-2 p-3.5 bg-black/40 border border-white/10 rounded-2xl">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-zinc-300 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
-                        Kayıtlı Adreslerinizden Seçin:
-                      </span>
-                      <Link to="/profil" className="sm:hidden text-[11px] text-[#C5A059] hover:underline">
-                        Adres Ekle / Düzenle
-                      </Link>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {user.savedAddresses.map((addr) => {
-                        const isSelected = selectedSavedAddressId === addr.id;
-                        return (
-                          <button
-                            key={addr.id}
-                            type="button"
-                            onClick={() => handleSelectSavedAddress(addr.id)}
-                            className={`text-left p-3 rounded-xl border text-xs transition-all flex flex-col justify-between ${
-                              isSelected
-                                ? 'bg-[#C5A059]/15 border-[#C5A059] text-white ring-1 ring-[#C5A059]'
-                                : 'bg-zinc-900/60 border-white/5 text-zinc-300 hover:border-white/20'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between w-full mb-1">
-                              <span className="font-bold text-zinc-100 flex items-center gap-1.5">
-                                {addr.title}
-                                {addr.isDefault && (
-                                  <span className="text-[9px] bg-[#C5A059]/20 text-[#C5A059] px-1.5 py-0.2 rounded font-normal">
-                                    Varsayılan
-                                  </span>
-                                )}
-                              </span>
-                              {isSelected && (
-                                <Check className="w-3.5 h-3.5 text-[#C5A059]" />
-                              )}
-                            </div>
-                            <p className="text-[11px] text-zinc-400 truncate">{addr.fullName} • {addr.phone}</p>
-                            <p className="text-[11px] text-zinc-300 truncate mt-0.5">{addr.district}, {addr.city}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Invoice Type Toggle */}
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setAddress({ ...address, invoiceType: 'individual' })}
-                    className={`py-2.5 px-4 rounded-xl border font-semibold uppercase tracking-wider transition-all ${
-                      address.invoiceType === 'individual'
-                        ? 'bg-[#C5A059]/15 border-[#C5A059] text-[#C5A059]'
-                        : 'bg-black/40 border-white/10 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Bireysel Fatura
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAddress({ ...address, invoiceType: 'corporate' })}
-                    className={`py-2.5 px-4 rounded-xl border font-semibold uppercase tracking-wider transition-all ${
-                      address.invoiceType === 'corporate'
-                        ? 'bg-[#C5A059]/15 border-[#C5A059] text-[#C5A059]'
-                        : 'bg-black/40 border-white/10 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Kurumsal Fatura
-                  </button>
-                </div>
-
-                {/* Corporate specific fields */}
-                {address.invoiceType === 'corporate' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-black/40 border border-white/10 text-xs animate-in fade-in">
-                    <div className="sm:col-span-2">
-                      <label className="block uppercase tracking-wider text-zinc-400 mb-1 font-medium">
-                        Firma Resmi Ünvanı *
-                      </label>
-                      <input
-                        type="text"
-                        required={address.invoiceType === 'corporate'}
-                        value={address.companyName}
-                        onChange={(e) => setAddress({ ...address, companyName: e.target.value })}
-                        placeholder="Örn: ABC Mimarlık Tasarım San. Tic. Ltd. Şti."
-                        className="w-full px-3.5 py-2.5 bg-black/60 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block uppercase tracking-wider text-zinc-400 mb-1 font-medium">
-                        Vergi Dairesi *
-                      </label>
-                      <input
-                        type="text"
-                        required={address.invoiceType === 'corporate'}
-                        value={address.taxOffice}
-                        onChange={(e) => setAddress({ ...address, taxOffice: e.target.value })}
-                        placeholder="Örn: Beşiktaş V.D."
-                        className="w-full px-3.5 py-2.5 bg-black/60 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block uppercase tracking-wider text-zinc-400 mb-1 font-medium">
-                        Vergi Numarası *
-                      </label>
-                      <input
-                        type="text"
-                        required={address.invoiceType === 'corporate'}
-                        value={address.taxNumber}
-                        onChange={(e) => setAddress({ ...address, taxNumber: e.target.value })}
-                        placeholder="10 Haneli Vergi No"
-                        className="w-full px-3.5 py-2.5 bg-black/60 border border-white/10 rounded-xl text-zinc-200 font-mono focus:border-[#C5A059] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* City & District */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                  <div>
-                    <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      Şehir *
-                    </label>
-                    <select
-                      value={address.city}
-                      onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                    >
-                      {TURKISH_CITIES.map((c) => (
-                        <option key={c} value={c} className="bg-zinc-900 text-zinc-200">
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      İlçe *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={address.district}
-                      onChange={(e) => setAddress({ ...address, district: e.target.value })}
-                      placeholder="Şişli / Nişantaşı"
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      Posta Kodu
-                    </label>
-                    <input
-                      type="text"
-                      value={address.postalCode}
-                      onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
-                      placeholder="34367"
-                      className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Full Address */}
-                <div className="text-xs">
-                  <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                    Açık Teslimat Adresi *
-                  </label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={address.addressLine}
-                    onChange={(e) => setAddress({ ...address, addressLine: e.target.value })}
-                    placeholder="Mahalle, Cadde/Sokak, Bina No, Kat ve Daire Numarasını detaylı belirtiniz..."
-                    className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none resize-none"
-                  />
-                </div>
-
-                {/* Order Note */}
-                <div className="text-xs">
-                  <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                    Teslimat & Sipariş Notu (Opsiyonel)
-                  </label>
-                  <input
-                    type="text"
-                    value={address.orderNote}
-                    onChange={(e) => setAddress({ ...address, orderNote: e.target.value })}
-                    placeholder="Örn: Güvenliğe bırakılabilir, hediye paketi yapılsın, zil çalınmasın..."
-                    className="w-full px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                  />
-                </div>
-
-                {/* SAVE ADDRESS TO ACCOUNT (If logged in) */}
-                {user && (
-                  <div className="pt-2 border-t border-white/5 space-y-3">
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs text-zinc-300 hover:text-white">
-                      <input
-                        type="checkbox"
-                        checked={saveToAccount}
-                        onChange={(e) => setSaveToAccount(e.target.checked)}
-                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-[#C5A059] focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                      />
-                      <span>Bu teslimat adresini hesabıma kayıtlı adres olarak ekle</span>
-                    </label>
-
-                    {saveToAccount && (
-                      <div className="pl-6 animate-in fade-in">
-                        <label className="block text-[11px] text-zinc-400 mb-1">
-                          Adres Başlığı (Örn: Evim, Ofis, Yazlık)
-                        </label>
-                        <input
-                          type="text"
-                          value={saveAddressTitle}
-                          onChange={(e) => setSaveAddressTitle(e.target.value)}
-                          placeholder="Adres Başlığı"
-                          className="w-full max-w-xs px-3 py-2 bg-black/60 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 3: Payment Method Selection */}
-              <div className="bg-[#0F0F12] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 glass-panel">
-                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                  <div className="w-8 h-8 rounded-xl bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] font-serif-luxury font-bold">
-                    3
-                  </div>
-                  <div>
-                    <h3 className="font-serif-luxury text-lg text-white uppercase tracking-wider">
-                      Ödeme Yöntemi
-                    </h3>
-                    <p className="text-[11px] text-zinc-400">Tüm ödemeler 256-Bit SSL ve PCI-DSS standartları ile şifrelenir.</p>
-                  </div>
-                </div>
-
-                {/* Method Options */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  {/* Option 1: Credit Card / iyzico */}
-                  <div
-                    onClick={() => setPaymentMethod('iyzico')}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'iyzico' || paymentMethod === 'stripe'
-                        ? 'bg-[#C5A059]/10 border-[#C5A059] text-white'
-                        : 'bg-black/40 border-white/10 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <CreditCard className={`w-5 h-5 ${paymentMethod === 'iyzico' || paymentMethod === 'stripe' ? 'text-[#C5A059]' : 'text-zinc-500'}`} />
-                      <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded font-mono">
-                        iyzico 3D Secure
-                      </span>
-                    </div>
-                    <div className="font-semibold text-zinc-100">Kredi / Banka Kartı</div>
-                    <div className="text-[11px] text-zinc-400 mt-0.5">iyzico Güvencesi ile Taksitli / Tek Çekim</div>
-                  </div>
-
-                  {/* Option 2: Bank Transfer / EFT */}
-                  <div
-                    onClick={() => setPaymentMethod('bank_transfer')}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'bank_transfer'
-                        ? 'bg-[#C5A059]/10 border-[#C5A059] text-white'
-                        : 'bg-black/40 border-white/10 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Building2 className={`w-5 h-5 ${paymentMethod === 'bank_transfer' ? 'text-[#C5A059]' : 'text-zinc-500'}`} />
-                      <span className="text-[10px] bg-[#C5A059] text-black font-extrabold px-1.5 py-0.5 rounded">
-                        %3 Ek İndirim
-                      </span>
-                    </div>
-                    <div className="font-semibold text-zinc-100">Havale / EFT</div>
-                    <div className="text-[11px] text-zinc-400 mt-0.5">Banka Hesabına Transfer</div>
-                  </div>
-
-                  {/* Option 3: Cash on Delivery / VIP Courier */}
-                  <div
-                    onClick={() => setPaymentMethod('cash_on_delivery')}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'cash_on_delivery'
-                        ? 'bg-[#C5A059]/10 border-[#C5A059] text-white'
-                        : 'bg-black/40 border-white/10 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Truck className={`w-5 h-5 ${paymentMethod === 'cash_on_delivery' ? 'text-[#C5A059]' : 'text-zinc-500'}`} />
-                      <span className="text-[10px] bg-white/10 text-zinc-300 px-1.5 py-0.5 rounded font-mono">
-                        VIP Kurye
-                      </span>
-                    </div>
-                    <div className="font-semibold text-zinc-100">Kapıda Ödeme</div>
-                    <div className="text-[11px] text-zinc-400 mt-0.5">Teslimatta Kart / Nakit</div>
-                  </div>
-                </div>
-
-                {/* Sub-form: iyzico Info */}
-                {(paymentMethod === 'iyzico' || paymentMethod === 'stripe') && (
-                  <div className="p-5 rounded-2xl bg-black/40 border border-white/10 space-y-3.5 text-xs animate-in fade-in">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white tracking-wider">IYZICO 3D SECURE ÖDEME GEÇİDİ</span>
-                        <span className="text-[10px] bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/30 px-2 py-0.5 rounded font-mono">
-                          BDDK LİSANSLI
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-zinc-400 font-mono">256-Bit SSL</span>
-                    </div>
-
-                    <p className="text-zinc-300 leading-relaxed">
-                      Siparişi onayla butonuna tıkladığınızda <strong className="text-white">iyzico Güvenli Ödeme Sayfasına</strong> yönlendirileceksiniz. Tüm banka kartları, Troy ve Advantage, World, Bonus, Maximum, CardFinans, Paraf kartları ile peşin veya taksitli ödeme yapabilirsiniz.
-                    </p>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                      <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-white/5 text-center">
-                        <div className="text-[11px] font-bold text-zinc-200">3D Secure</div>
-                        <div className="text-[10px] text-zinc-500">SMS Şifre Doğrulama</div>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-white/5 text-center">
-                        <div className="text-[11px] font-bold text-zinc-200">Taksit İmkanı</div>
-                        <div className="text-[10px] text-zinc-500">12 Aya Varan Taksit</div>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-white/5 text-center">
-                        <div className="text-[11px] font-bold text-zinc-200">Kart Güvenliği</div>
-                        <div className="text-[10px] text-zinc-500">PCI-DSS Seviye 1</div>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-white/5 text-center">
-                        <div className="text-[11px] font-bold text-zinc-200">LUMEN Güvencesi</div>
-                        <div className="text-[10px] text-zinc-500">Ahşap Sandık Kargo</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Sub-form: Bank Transfer Info */}
-                {paymentMethod === 'bank_transfer' && (
-                  <div className="p-5 rounded-2xl bg-black/40 border border-white/5 space-y-3 text-xs animate-in fade-in">
-                    <div className="flex items-center gap-2 text-[#C5A059] font-bold">
-                      <Sparkles className="w-4 h-4" />
-                      <span>Havale / EFT ile %3 Ek İndirim Kazandınız</span>
-                    </div>
-                    <p className="text-zinc-400 leading-relaxed">
-                      Siparişinizi tamamladıktan sonra size özel oluşturulacak Sipariş Takip Numarası ile aşağıdaki IBAN hesabımıza ödemenizi gerçekleştirebilirsiniz:
-                    </p>
-                    <div className="p-3 bg-zinc-900 rounded-xl space-y-1 font-mono text-zinc-200 border border-white/5">
-                      <div><span className="text-zinc-500">Banka:</span> Garanti BBVA - Levent Ticari Şube</div>
-                      <div><span className="text-zinc-500">Hesap Adı:</span> Lumen Atelier Aydınlatma Tasarım A.Ş.</div>
-                      <div><span className="text-zinc-500">IBAN:</span> TR33 0006 2000 0001 2345 6789 01</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Sub-form: Cash on Delivery Info */}
-                {paymentMethod === 'cash_on_delivery' && (
-                  <div className="p-5 rounded-2xl bg-black/40 border border-white/5 space-y-2 text-xs animate-in fade-in">
-                    <div className="flex items-center gap-2 text-zinc-200 font-semibold">
-                      <Truck className="w-4 h-4 text-[#C5A059]" />
-                      <span>VIP Randevulu Teslimat & Kapıda Ödeme</span>
-                    </div>
-                    <p className="text-zinc-400 leading-relaxed">
-                      Tasarım ekibimiz randevu saatinde adresinize gelerek lambanızın montaj kontrolünü yapar. Ödemenizi kapıda kredi kartı veya nakit olarak yapabilirsiniz.
-                    </p>
-                  </div>
-                )}
-
-                {/* Terms Agreement */}
-                <div className="flex items-start gap-2.5 pt-2">
-                  <input
-                    type="checkbox"
-                    id="terms-check"
-                    required
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="mt-0.5 rounded bg-black border-white/10 text-[#C5A059] focus:ring-0"
-                  />
-                  <label htmlFor="terms-check" className="text-[11px] text-zinc-400 leading-tight cursor-pointer">
-                    <span className="text-zinc-200 underline">Mesafeli Satış Sözleşmesi</span>'ni ve <span className="text-zinc-200 underline">Ön Bilgilendirme Koşulları</span>'nı okudum, onaylıyorum.
-                  </label>
-                </div>
-              </div>
-
+              <h1 className="font-serif-luxury text-2xl sm:text-4xl text-white tracking-tight">
+                Siparişi Tamamla
+              </h1>
             </div>
+            
+            <div className="text-xs text-zinc-400 font-light flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-[#C5A059]" />
+              <span>Misafir veya üye olarak anında işlem</span>
+            </div>
+          </div>
 
-            {/* RIGHT COLUMN: Order Review & Coupon Engine (5 Cols) */}
-            <div className="lg:col-span-5 space-y-6 sticky top-24">
-              
-              {/* Order Items Review */}
-              <div className="bg-[#0F0F12] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 glass-panel">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <h3 className="font-serif-luxury text-base text-white uppercase tracking-wider">
-                    Sipariş Özeti ({items.reduce((acc, i) => acc + i.quantity, 0)})
-                  </h3>
-                  <Link to="/" className="text-[11px] text-[#C5A059] hover:underline font-medium">
-                    Düzenle
-                  </Link>
-                </div>
+          {/* ============================================================
+              MINIMALIST CENTERED STEP TRACKER (Symbols + Greater-Than Delimiters)
+              "bunu kaldir araya 2 tane buyuktur isareti koy yazi fontunu daha modern olanla degistir aradaki boslugu azalr sepet kargo odeme arasinda"
+          ============================================================ */}
+          <div className="w-full flex items-center justify-center mb-10 px-4">
+            <div className="inline-flex items-center justify-center gap-3 sm:gap-6 md:gap-8">
+              {stepTabs.map((s, index) => {
+                const isActive = activeTab === s.id;
+                const isCompleted = (s.id === 'cart' && (activeTab === 'shipping' || activeTab === 'payment')) ||
+                                    (s.id === 'shipping' && activeTab === 'payment');
+                const Icon = s.icon;
 
-                {/* Items List */}
-                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                  {items.map((item) => {
-                    const itemKey = item.selectedColor ? `${item.product.id}-${item.selectedColor}` : item.product.id;
-                    return (
-                      <div key={itemKey} className="flex gap-3.5 p-3 rounded-2xl bg-black/40 border border-white/5">
-                        <img
-                          src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=200&q=80'}
-                          alt={item.product.name}
-                          className="w-16 h-16 object-cover rounded-xl bg-black border border-white/10 flex-shrink-0"
-                        />
-                        <div className="flex-1 flex flex-col justify-between min-w-0">
-                          <div>
-                            <h4 className="text-xs font-semibold text-zinc-200 truncate">{item.product.name}</h4>
-                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <span className="text-[10px] text-[#C5A059] uppercase tracking-wider">{item.product.categoryName}</span>
-                              {item.selectedColor && (
-                                <span className="text-[9px] bg-white/10 text-zinc-300 px-1.5 py-0.2 rounded border border-white/10">
-                                  {item.selectedColor}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-zinc-400 text-[11px]">Adet: {item.quantity}</span>
-                            <span className="font-serif-luxury font-bold text-white">{formatCurrency(item.product.price * item.quantity)}</span>
-                          </div>
+                return (
+                  <React.Fragment key={s.id}>
+                    <button
+                      id={`checkout-tab-${s.id}`}
+                      type="button"
+                      onClick={() => handleTabClick(s.id)}
+                      className="relative flex flex-col items-center group cursor-pointer focus:outline-none"
+                    >
+                      {/* Circle Icon Badge */}
+                      <div className="relative flex items-center justify-center">
+                        <div
+                          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border relative shadow-md transition-colors ${
+                            isActive
+                              ? 'bg-[#C5A059] border-[#E5C378] text-black shadow-[#C5A059]/25 ring-2 ring-[#C5A059]/50'
+                              : isCompleted
+                              ? 'bg-[#18181D] border-white/20 text-zinc-200'
+                              : 'bg-[#111116] border-white/10 text-zinc-400 hover:text-zinc-100 hover:border-white/20'
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+
+                          {/* Completed Checkmark badge (Sarı / Altın Tik Rozeti) */}
+                          {isCompleted && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#C5A059] text-black flex items-center justify-center shadow">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </span>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
 
-                {/* COUPON CODE INPUT SECTION */}
-                <div className="pt-4 border-t border-white/10 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-[#C5A059]" /> İndirim Kuponu / Promosyon Kodu
+                      {/* Step Title Label - Modern Sans Font */}
+                      <div className="mt-2 flex flex-col items-center text-center">
+                        <span className={`text-[11px] sm:text-xs font-sans tracking-[0.12em] uppercase font-semibold transition-colors ${
+                          isActive ? 'text-white' : isCompleted ? 'text-zinc-300' : 'text-zinc-500 group-hover:text-zinc-300'
+                        }`}>
+                          {s.title}
+                        </span>
+                        {isActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] mt-1" />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* 2 Tane Büyüktür İşareti (Sepet ile Kargo ve Kargo ile Ödeme arasına) */}
+                    {index < stepTabs.length - 1 && (
+                      <div className="flex items-center -translate-y-2.5 select-none" aria-hidden="true">
+                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-600 shrink-0" />
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ============================================================
+              MAIN CONTENT GRID: ACTIVE STEP VIEW + STICKY ORDER SUMMARY
+          ============================================================ */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+            
+            {/* LEFT COLUMN: ACTIVE STEP CONTENTS */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* --------------------------------------------------------
+                  TAB 1: SEPET (Ürün İnceleme, Adet Değiştirme, Kupon)
+              -------------------------------------------------------- */}
+              {activeTab === 'cart' && (
+                <section className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-5">
+                    <div>
+                      <h2 className="font-serif-luxury text-xl sm:text-2xl text-white flex items-center gap-2.5">
+                        <ShoppingBag className="w-5 h-5 text-[#C5A059]" />
+                        <span>Sepetinizdeki Tasarımlar</span>
+                      </h2>
+                      <p className="text-xs text-zinc-400 mt-1 font-light">
+                        Adetleri güncelleyebilir, kupon uygulayabilir ve siparişinizi kontrol edebilirsiniz.
+                      </p>
+                    </div>
+                    <span className="text-xs text-[#C5A059] bg-[#C5A059]/10 border border-[#C5A059]/20 px-3 py-1 rounded-full font-medium self-start sm:self-auto">
+                      {totalItemCount} Tasarım Parçası
                     </span>
                   </div>
 
-                  {appliedCoupon ? (
-                    <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-2xl flex items-center justify-between animate-in fade-in">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-900/60 text-emerald-300 flex items-center justify-center font-bold text-xs">
-                          %
+                  {/* Free Shipping Progress Bar */}
+                  <div className="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 text-zinc-300">
+                        <Truck className="w-4 h-4 text-[#C5A059]" />
+                        <span>
+                          {isFreeShipping 
+                            ? 'Tebrikler! Ücretsiz Sigortalı Kargo Kazandınız.' 
+                            : `Ücretsiz Kargo İçin: ${formatCurrency(remainingForFreeShipping)} daha ekleyin`}
+                        </span>
+                      </div>
+                      <span className="text-[#C5A059] font-bold font-mono">
+                        {isFreeShipping ? 'ÜCRETSİZ' : '₺250'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-[#C5A059] to-[#E5C378] h-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, ((currentSubtotal - discountAmount) / shippingThreshold) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Items List */}
+                  <div className="divide-y divide-white/5">
+                    {items.map((item, idx) => {
+                      const itemSubtotal = item.product.price * item.quantity;
+                      return (
+                        <div key={`${item.product.id}-${item.selectedColor || idx}`} className="py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            {/* Product Thumbnail */}
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-black/60 border border-white/10 overflow-hidden flex-shrink-0 relative group">
+                              {item.product.images?.[0] ? (
+                                <img 
+                                  src={item.product.images[0]} 
+                                  alt={item.product.name} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                                  <ShoppingBag className="w-6 h-6" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Product Details */}
+                            <div className="space-y-1">
+                              <h3 className="font-serif-luxury text-sm sm:text-base text-white font-medium">
+                                {item.product.name}
+                              </h3>
+                              {item.selectedColor && (
+                                <div className="inline-block text-[10px] bg-white/5 border border-white/10 text-zinc-300 px-2 py-0.5 rounded-md">
+                                  Renk: {item.selectedColor}
+                                </div>
+                              )}
+                              <div className="text-xs text-zinc-400 font-mono">
+                                Birim: {formatCurrency(item.product.price)}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Controls: Quantity & Total & Remove */}
+                          <div className="flex items-center justify-between sm:justify-end gap-6 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                            {/* Quantity Stepper */}
+                            {!directProduct ? (
+                              <div className="flex items-center border border-white/10 rounded-xl bg-black/40 overflow-hidden">
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedColor)}
+                                  className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+                                  aria-label="Adet Azalt"
+                                >
+                                  <Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <span className="px-3 text-xs font-mono font-bold text-white min-w-[2rem] text-center">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedColor)}
+                                  className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+                                  aria-label="Adet Artır"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="text-xs text-zinc-400 font-mono">
+                                Adet: <strong className="text-white">{item.quantity}</strong>
+                              </div>
+                            )}
+
+                            {/* Line Total */}
+                            <div className="font-serif-luxury text-base sm:text-lg text-[#C5A059] font-medium min-w-[5rem] text-right">
+                              {formatCurrency(itemSubtotal)}
+                            </div>
+
+                            {/* Remove button */}
+                            {!directProduct && (
+                              <button
+                                type="button"
+                                onClick={() => removeFromCart(item.product.id, item.selectedColor)}
+                                className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors"
+                                title="Ürünü Sepetten Kaldır"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                            <span>{appliedCoupon.code}</span>
-                            <span className="text-[10px] bg-emerald-900 text-emerald-200 px-1.5 py-0.2 rounded font-sans">
-                              {appliedCoupon.discountType === 'percentage' ? `%${appliedCoupon.discountValue}` : `${appliedCoupon.discountValue} TL`}
+                      );
+                    })}
+                  </div>
+
+                  {/* Coupon Engine */}
+                  <div className="pt-4 border-t border-white/10">
+                    <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+                      İndirim Kuponu / Promosyon Kodu
+                    </label>
+
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <div>
+                            <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                              {appliedCoupon.code}
+                            </span>
+                            <span className="text-xs text-emerald-400/80 ml-2">
+                              (-{formatCurrency(discountAmount)} İndirim Uygulandı)
                             </span>
                           </div>
-                          <div className="text-[10px] text-emerald-400/80">
-                            -{formatCurrency(discountAmount)} indirim uygulandı
-                          </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-xs text-zinc-400 hover:text-rose-400 p-1 transition-colors"
+                        >
+                          Kaldır
+                        </button>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={handleRemoveCoupon}
-                        className="p-1.5 text-zinc-400 hover:text-rose-400 transition-colors"
-                        title="Kuponu Kaldır"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
+                    ) : (
                       <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={couponInput}
-                          onChange={(e) => setCouponInput(e.target.value.toUpperCase().trim())}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleApplyCoupon(e.currentTarget);
-                            }
-                          }}
-                          placeholder="İndirim Kodu Giriniz"
-                          className="flex-1 px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-100 font-mono tracking-wider focus:border-[#C5A059] focus:outline-none"
-                        />
+                        <div className="relative flex-1">
+                          <Tag className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={couponInput}
+                            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleApplyCoupon(e.currentTarget);
+                              }
+                            }}
+                            placeholder="Kupon kodunuz (örn: LUMEN10)"
+                            className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 uppercase tracking-wider focus:outline-none focus:border-[#C5A059]"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={(e) => handleApplyCoupon(e.currentTarget)}
-                          className="px-4 py-2.5 bg-white/10 hover:bg-[#C5A059] hover:text-black text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-sm"
+                          className="px-5 py-2.5 bg-white/10 hover:bg-[#C5A059] hover:text-black text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
                         >
                           Uygula
                         </button>
                       </div>
+                    )}
 
-                      {/* Feedback message */}
-                      {couponFeedback && (
-                        <div className={`text-[11px] p-2 rounded-lg flex items-center gap-1.5 ${
-                          couponFeedback.type === 'success' 
-                            ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/60' 
-                            : 'bg-rose-950/60 text-rose-300 border border-rose-800/60'
+                    {couponFeedback && (
+                      <div className={`text-xs mt-2 flex items-center gap-1.5 ${
+                        couponFeedback.type === 'success' ? 'text-emerald-400' : 'text-rose-400'
+                      }`}>
+                        {couponFeedback.type === 'success' ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                        <span>{couponFeedback.message}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Forward to Shipping Action */}
+                  <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <Link
+                      to="/"
+                      className="text-xs text-zinc-400 hover:text-[#C5A059] transition-colors flex items-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Alışverişe Devam Et</span>
+                    </Link>
+
+                    <button
+                      id="proceed-to-shipping-btn"
+                      type="button"
+                      onClick={handleProceedToShipping}
+                      className="w-full sm:w-auto px-8 py-4 bg-[#C5A059] hover:bg-[#d6b26b] active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Kargo Bilgilerine Devam Et</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </section>
+              )}
+
+            {/* --------------------------------------------------------
+                TAB 2: KARGO BİLGİLERİ (Misafir / Üye Adres Formu)
+            -------------------------------------------------------- */}
+            {activeTab === 'shipping' && (
+              <section className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-5">
+                    <div>
+                      <h2 className="font-serif-luxury text-xl sm:text-2xl text-white flex items-center gap-2.5">
+                        <Truck className="w-5 h-5 text-[#C5A059]" />
+                        <span>Teslimat ve İletişim Bilgileri</span>
+                      </h2>
+                      <p className="text-xs text-zinc-400 mt-1 font-light">
+                        Misafir veya üye olarak sipariş verebilirsiniz. Üyelik zorunlu değildir.
+                      </p>
+                    </div>
+
+                    {!user ? (
+                      <button
+                        type="button"
+                        onClick={() => openAuthModal('Giriş yaparak kayıtlı adreslerinizi kolayca seçebilirsiniz.')}
+                        className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-zinc-300 rounded-xl transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                      >
+                        <User className="w-3.5 h-3.5 text-[#C5A059]" />
+                        <span>Üye Girişi Yap</span>
+                      </button>
+                    ) : (
+                      <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full font-medium self-start sm:self-auto flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Üye: {user.displayName || user.email}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Saved Addresses Picker for Logged-in Users */}
+                  {user && user.savedAddresses && user.savedAddresses.length > 0 && (
+                    <div className="space-y-3 bg-black/40 p-4 rounded-2xl border border-white/10">
+                      <div className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center justify-between">
+                        <span>Kayıtlı Adresleriniz</span>
+                        <span className="text-[10px] text-zinc-500">Tek tıkla seçin</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {user.savedAddresses.map((sa) => (
+                          <div
+                            key={sa.id}
+                            onClick={() => handleSelectSavedAddress(sa.id)}
+                            className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                              selectedSavedAddressId === sa.id
+                                ? 'bg-[#1C1C24] border-[#C5A059] ring-1 ring-[#C5A059]/40'
+                                : 'bg-black/30 border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-bold text-white">{sa.title || 'Adresim'}</span>
+                              {selectedSavedAddressId === sa.id && (
+                                <Check className="w-3.5 h-3.5 text-[#C5A059]" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-zinc-300 line-clamp-2 leading-relaxed">
+                              {sa.addressLine}, {sa.district} / {sa.city}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Address Form Inputs */}
+                  <div className="space-y-4">
+                    {/* Contact details row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Full Name */}
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          Ad Soyad <span className="text-[#C5A059]">*</span>
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            id="shipping-fullname"
+                            type="text"
+                            value={address.fullName}
+                            onChange={(e) => {
+                              setAddress({ ...address, fullName: e.target.value });
+                              if (formErrors.fullName) setFormErrors({ ...formErrors, fullName: '' });
+                            }}
+                            placeholder="Adınız ve Soyadınız"
+                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 border rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors ${
+                              formErrors.fullName ? 'border-rose-500/80 bg-rose-500/5' : 'border-white/10'
+                            }`}
+                          />
+                        </div>
+                        {formErrors.fullName && (
+                          <p className="text-[11px] text-rose-400 mt-1">{formErrors.fullName}</p>
+                        )}
+                      </div>
+
+                      {/* Phone */}
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          Telefon Numarası <span className="text-[#C5A059]">*</span>
+                        </label>
+                        <div className="relative">
+                          <Phone className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            id="shipping-phone"
+                            type="tel"
+                            value={address.phone}
+                            onChange={(e) => {
+                              setAddress({ ...address, phone: e.target.value });
+                              if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' });
+                            }}
+                            placeholder="05XX XXX XX XX"
+                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 border rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors ${
+                              formErrors.phone ? 'border-rose-500/80 bg-rose-500/5' : 'border-white/10'
+                            }`}
+                          />
+                        </div>
+                        {formErrors.phone && (
+                          <p className="text-[11px] text-rose-400 mt-1">{formErrors.phone}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                        E-posta Adresi <span className="text-[#C5A059]">*</span>
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          id="shipping-email"
+                          type="email"
+                          value={address.email}
+                          onChange={(e) => {
+                            setAddress({ ...address, email: e.target.value });
+                            if (formErrors.email) setFormErrors({ ...formErrors, email: '' });
+                          }}
+                          placeholder="ornek@alanadi.com (Sipariş takibi için)"
+                          className={`w-full pl-10 pr-4 py-2.5 bg-black/40 border rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors ${
+                            formErrors.email ? 'border-rose-500/80 bg-rose-500/5' : 'border-white/10'
+                          }`}
+                        />
+                      </div>
+                      {formErrors.email && (
+                        <p className="text-[11px] text-rose-400 mt-1">{formErrors.email}</p>
+                      )}
+                    </div>
+
+                    {/* City & District & Postal Code */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* City */}
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          İl <span className="text-[#C5A059]">*</span>
+                        </label>
+                        <select
+                          id="shipping-city"
+                          value={address.city}
+                          onChange={(e) => {
+                            setAddress({ ...address, city: e.target.value });
+                            if (formErrors.city) setFormErrors({ ...formErrors, city: '' });
+                          }}
+                          className={`w-full px-3 py-2.5 bg-black/40 border rounded-xl text-xs text-white focus:outline-none focus:border-[#C5A059] transition-colors ${
+                            formErrors.city ? 'border-rose-500/80' : 'border-white/10'
+                          }`}
+                        >
+                          {TURKISH_CITIES.map((c) => (
+                            <option key={c} value={c} className="bg-zinc-900 text-white">
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* District */}
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          İlçe <span className="text-[#C5A059]">*</span>
+                        </label>
+                        <input
+                          id="shipping-district"
+                          type="text"
+                          value={address.district}
+                          onChange={(e) => {
+                            setAddress({ ...address, district: e.target.value });
+                            if (formErrors.district) setFormErrors({ ...formErrors, district: '' });
+                          }}
+                          placeholder="Örn: Beşiktaş, Çankaya"
+                          className={`w-full px-3 py-2.5 bg-black/40 border rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors ${
+                            formErrors.district ? 'border-rose-500/80 bg-rose-500/5' : 'border-white/10'
+                          }`}
+                        />
+                        {formErrors.district && (
+                          <p className="text-[11px] text-rose-400 mt-1">{formErrors.district}</p>
+                        )}
+                      </div>
+
+                      {/* Postal code */}
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          Posta Kodu
+                        </label>
+                        <input
+                          id="shipping-postalcode"
+                          type="text"
+                          value={address.postalCode}
+                          onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+                          placeholder="34000"
+                          className="w-full px-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Full Address */}
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                        Açık Teslimat Adresi <span className="text-[#C5A059]">*</span>
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" />
+                        <textarea
+                          id="shipping-address-line"
+                          rows={3}
+                          value={address.addressLine}
+                          onChange={(e) => {
+                            setAddress({ ...address, addressLine: e.target.value });
+                            if (formErrors.addressLine) setFormErrors({ ...formErrors, addressLine: '' });
+                          }}
+                          placeholder="Mahalle, Cadde, Sokak, Bina No, Kat ve Daire numarası..."
+                          className={`w-full pl-10 pr-4 py-2.5 bg-black/40 border rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors ${
+                            formErrors.addressLine ? 'border-rose-500/80 bg-rose-500/5' : 'border-white/10'
+                          }`}
+                        />
+                      </div>
+                      {formErrors.addressLine && (
+                        <p className="text-[11px] text-rose-400 mt-1">{formErrors.addressLine}</p>
+                      )}
+                    </div>
+
+                    {/* Invoice Type Radio: Individual vs Corporate */}
+                    <div className="pt-2">
+                      <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+                        Fatura Türü
+                      </label>
+                      <div className="grid grid-cols-2 gap-3 max-w-sm">
+                        <label className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
+                          address.invoiceType === 'individual'
+                            ? 'bg-[#1C1C24] border-[#C5A059] text-white'
+                            : 'bg-black/30 border-white/10 text-zinc-400'
                         }`}>
-                          {couponFeedback.type === 'success' ? (
-                            <Check className="w-3.5 h-3.5 flex-shrink-0" />
-                          ) : (
-                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                          )}
-                          <span>{couponFeedback.message}</span>
+                          <input
+                            type="radio"
+                            name="invoiceType"
+                            checked={address.invoiceType === 'individual'}
+                            onChange={() => setAddress({ ...address, invoiceType: 'individual' })}
+                            className="hidden"
+                          />
+                          <User className="w-4 h-4 text-[#C5A059]" />
+                          <span className="text-xs font-medium">Bireysel Fatura</span>
+                        </label>
+
+                        <label className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
+                          address.invoiceType === 'corporate'
+                            ? 'bg-[#1C1C24] border-[#C5A059] text-white'
+                            : 'bg-black/30 border-white/10 text-zinc-400'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="invoiceType"
+                            checked={address.invoiceType === 'corporate'}
+                            onChange={() => setAddress({ ...address, invoiceType: 'corporate' })}
+                            className="hidden"
+                          />
+                          <Building2 className="w-4 h-4 text-[#C5A059]" />
+                          <span className="text-xs font-medium">Kurumsal Fatura</span>
+                        </label>
+                      </div>
+
+                      {/* Corporate Details Fields */}
+                      {address.invoiceType === 'corporate' && (
+                        <div className="mt-3 p-4 rounded-xl bg-black/40 border border-white/10 space-y-3">
+                          <div>
+                            <label className="block text-xs text-zinc-300 mb-1">
+                              Firma Ünvanı <span className="text-[#C5A059]">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={address.companyName || ''}
+                              onChange={(e) => setAddress({ ...address, companyName: e.target.value })}
+                              placeholder="Şirket Tam Resmi Ünvanı"
+                              className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-xs text-white"
+                            />
+                            {formErrors.companyName && (
+                              <p className="text-[11px] text-rose-400 mt-1">{formErrors.companyName}</p>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-zinc-300 mb-1">Vergi Dairesi</label>
+                              <input
+                                type="text"
+                                value={address.taxOffice || ''}
+                                onChange={(e) => setAddress({ ...address, taxOffice: e.target.value })}
+                                placeholder="Vergi Dairesi"
+                                className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-xs text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-300 mb-1">
+                                Vergi Numarası / VKN <span className="text-[#C5A059]">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={address.taxNumber || ''}
+                                onChange={(e) => setAddress({ ...address, taxNumber: e.target.value })}
+                                placeholder="10 Haneli VKN"
+                                className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-xs text-white"
+                              />
+                              {formErrors.taxNumber && (
+                                <p className="text-[11px] text-rose-400 mt-1">{formErrors.taxNumber}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
-                  )}
+
+                    {/* Order / Delivery Note */}
+                    <div className="pt-2">
+                      <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                        Kurye & Sipariş Notu (Opsiyonel)
+                      </label>
+                      <input
+                        type="text"
+                        value={address.orderNote || ''}
+                        onChange={(e) => setAddress({ ...address, orderNote: e.target.value })}
+                        placeholder="Örn: Zile basmayın, güvenliğe bırakılabilir vb."
+                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors"
+                      />
+                    </div>
+
+                    {/* Option to save address for member */}
+                    {user && (
+                      <div className="pt-2">
+                        <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={saveToAccount}
+                            onChange={(e) => setSaveToAccount(e.target.checked)}
+                            className="rounded border-zinc-700 bg-black/50 text-[#C5A059] focus:ring-0"
+                          />
+                          <span>Bu teslimat adresini hesabıma sonraki siparişler için kaydet</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions: Back to Cart or Proceed to Payment */}
+                  <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('cart');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Sepete Geri Dön</span>
+                    </button>
+
+                    <button
+                      id="proceed-to-payment-btn"
+                      type="button"
+                      onClick={handleProceedToPayment}
+                      className="w-full sm:w-auto px-8 py-4 bg-[#C5A059] hover:bg-[#d6b26b] active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Ödeme Adımına Geç</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </section>
+              )}
+
+            {/* --------------------------------------------------------
+                TAB 3: ÖDEME (iyzico 3D Secure, Havale, Kapıda Ödeme)
+            -------------------------------------------------------- */}
+            {activeTab === 'payment' && (
+              <section className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-5">
+                    <div>
+                      <h2 className="font-serif-luxury text-xl sm:text-2xl text-white flex items-center gap-2.5">
+                        <CreditCard className="w-5 h-5 text-[#C5A059]" />
+                        <span>Ödeme Yöntemi ve Güvenli Onay</span>
+                      </h2>
+                      <p className="text-xs text-zinc-400 mt-1 font-light">
+                        Tercih ettiğiniz ödeme yöntemini seçerek siparişinizi onaylayabilirsiniz.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                      <Lock className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <span>TLS Şifreli 3D Secure Güvenlik</span>
+                    </div>
+                  </div>
+
+                  {/* Delivery Address Review Pill */}
+                  <div className="bg-black/40 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-white/5 text-[#C5A059] flex-shrink-0 mt-0.5">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div className="text-xs">
+                        <div className="font-semibold text-white flex items-center gap-2">
+                          <span>{address.fullName}</span>
+                          <span className="text-zinc-500 font-normal">({address.phone})</span>
+                        </div>
+                        <p className="text-zinc-400 mt-0.5 font-light line-clamp-1">
+                          {address.addressLine}, {address.district} / {address.city}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('shipping')}
+                      className="text-xs text-[#C5A059] hover:underline self-start sm:self-auto font-medium"
+                    >
+                      Adresi Değiştir
+                    </button>
+                  </div>
+
+                  {/* Payment Method Cards */}
+                  <div className="space-y-3">
+                    <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                      Ödeme Seçenekleri
+                    </label>
+
+                    {/* 1. Credit Card with iyzico */}
+                    <div
+                      onClick={() => setPaymentMethod('iyzico')}
+                      className={`p-4 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all ${
+                        paymentMethod === 'iyzico'
+                          ? 'bg-gradient-to-br from-[#1C1C24] to-[#121217] border-[#C5A059] ring-1 ring-[#C5A059]/40 shadow-lg'
+                          : 'bg-black/30 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-2 rounded-xl ${paymentMethod === 'iyzico' ? 'bg-[#C5A059] text-black' : 'bg-white/5 text-zinc-400'}`}>
+                            <CreditCard className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-serif-luxury font-medium text-white block">
+                              Kredi / Banka Kartı (iyzico 3D Secure)
+                            </span>
+                            <span className="text-[11px] text-zinc-400 font-light">
+                              Tüm kartlara peşin veya 12 aya varan taksit imkanı
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <img src="/payment/visa.svg" alt="Visa" className="h-5 w-auto object-contain opacity-85" />
+                          <img src="/payment/mastercard.svg" alt="Mastercard" className="h-5 w-auto object-contain opacity-85" />
+                        </div>
+                      </div>
+
+                      {paymentMethod === 'iyzico' && (
+                        <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-zinc-400 space-y-1.5">
+                          <p>
+                            Siparişi Tamamla butonuna tıkladığınızda TCMB lisanslı ve PCI-DSS Seviye 1 sertifikalı <strong className="text-white">iyzico Güvenli Ödeme</strong> sayfasına yönlendirileceksiniz.
+                          </p>
+                          <div className="flex items-center gap-2 text-zinc-300 pt-1">
+                            <Shield className="w-3.5 h-3.5 text-[#C5A059]" />
+                            <span>Kart bilgileriniz asla saklanmaz, 3D Secure ve TLS güvencesiyle bankanıza iletilir.</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 2. Havale / EFT (%3 Discount) */}
+                    <div
+                      onClick={() => setPaymentMethod('bank_transfer')}
+                      className={`p-4 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all ${
+                        paymentMethod === 'bank_transfer'
+                          ? 'bg-gradient-to-br from-[#1C1C24] to-[#121217] border-[#C5A059] ring-1 ring-[#C5A059]/40 shadow-lg'
+                          : 'bg-black/30 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-2 rounded-xl ${paymentMethod === 'bank_transfer' ? 'bg-[#C5A059] text-black' : 'bg-white/5 text-zinc-400'}`}>
+                            <Building2 className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-serif-luxury font-medium text-white block">
+                              Havale / EFT ile Ödeme
+                            </span>
+                            <span className="text-[11px] text-zinc-400 font-light">
+                              Garanti BBVA kurumsal hesabımıza doğrudan transfer
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] bg-[#C5A059] text-black font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          %3 Anında İndirim
+                        </span>
+                      </div>
+
+                      {paymentMethod === 'bank_transfer' && (
+                        <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-zinc-400 space-y-2">
+                          <div className="bg-black/50 p-3 rounded-xl border border-white/5 font-mono">
+                            <div className="text-emerald-400 font-semibold mb-1">
+                              ✓ %3 Nakit Havale İndirimi ({formatCurrency(paymentDiscount)}) toplamdan düşüldü!
+                            </div>
+                            <div className="text-zinc-300">Garanti BBVA: TR34 0006 2000 0001 2345 6789 01</div>
+                            <div className="text-zinc-400 text-[10px] mt-0.5">Alıcı: LUMEN AYDINLATMA SAN. VE TİC. LTD. ŞTİ.</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 3. Kapıda Ödeme (VIP Delivery) */}
+                    <div
+                      onClick={() => setPaymentMethod('cash_on_delivery')}
+                      className={`p-4 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all ${
+                        paymentMethod === 'cash_on_delivery'
+                          ? 'bg-gradient-to-br from-[#1C1C24] to-[#121217] border-[#C5A059] ring-1 ring-[#C5A059]/40 shadow-lg'
+                          : 'bg-black/30 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-2 rounded-xl ${paymentMethod === 'cash_on_delivery' ? 'bg-[#C5A059] text-black' : 'bg-white/5 text-zinc-400'}`}>
+                            <Truck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-serif-luxury font-medium text-white block">
+                              Kapıda VIP Kurye ile Ödeme
+                            </span>
+                            <span className="text-[11px] text-zinc-400 font-light">
+                              Teslimat anında nakit veya temassız POS ile ödeme
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] bg-white/10 text-zinc-300 border border-white/10 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                          VIP Randevu
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Legal Agreements & Marketing Consent */}
+                  <div className="pt-4 border-t border-white/10 space-y-3">
+                    {/* Optional Electronic Commercial Message Consent (Unchecked by default) */}
+                    <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        id="marketing-consent-checkbox"
+                        checked={marketingConsent}
+                        onChange={(e) => setMarketingConsent(e.target.checked)}
+                        className="mt-0.5 rounded border-zinc-700 bg-black/50 text-[#C5A059] focus:ring-0 flex-shrink-0 cursor-pointer"
+                      />
+                      <span className="leading-relaxed">
+                        Kampanya ve yeni ürün duyurularından e-posta ile haberdar olmak istiyorum. Onayımı dilediğim zaman geri çekebilirim.
+                      </span>
+                    </label>
+
+                    {/* Mandatory Contract Checkbox */}
+                    <label className="flex items-start gap-2.5 text-xs text-zinc-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        id="terms-accepted-checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-0.5 rounded border-zinc-700 bg-black/50 text-[#C5A059] focus:ring-0 flex-shrink-0 cursor-pointer"
+                      />
+                      <span className="leading-relaxed">
+                        <Link to="/on-bilgilendirme-formu" target="_blank" rel="noopener noreferrer" className="text-[#C5A059] underline hover:text-white font-medium">
+                          Ön Bilgilendirme Formu
+                        </Link>
+                        &apos;nu ve{' '}
+                        <Link to="/mesafeli-satis-sozlesmesi" target="_blank" rel="noopener noreferrer" className="text-[#C5A059] underline hover:text-white font-medium">
+                          Mesafeli Satış Sözleşmesi
+                        </Link>
+                        &apos;ni okudum, onaylıyorum. <span className="text-rose-400 font-semibold">*</span>
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Complete Order Action */}
+                  <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('shipping');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Kargo Bilgilerine Dön</span>
+                    </button>
+
+                    <button
+                      id="place-order-submit-btn"
+                      type="button"
+                      disabled={loading || !termsAccepted}
+                      onClick={handlePlaceOrder}
+                      className="w-full sm:w-auto px-10 py-4 bg-[#C5A059] hover:bg-[#d6b26b] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-all shadow-xl flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>İşlem Yapılıyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          <span>Güvenli Ödemeyi Tamamla ({formatCurrency(finalPayableTotal)})</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </section>
+              )}
+
+            </div>
+
+            {/* RIGHT COLUMN: STICKY MODERN LUXURY ORDER SUMMARY */}
+            <div className="lg:col-span-4 sticky top-24 space-y-4">
+              <div className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <h3 className="font-serif-luxury text-lg text-white">Sipariş Özeti</h3>
+                  <span className="text-xs text-zinc-400 font-mono">{totalItemCount} Tasarım</span>
                 </div>
 
-                {/* Price Breakdown Calculation */}
-                <div className="pt-4 border-t border-white/10 space-y-2 text-xs">
-                  <div className="flex justify-between text-zinc-400">
+                {/* Items preview list */}
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                  {items.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-black/60 border border-white/10 overflow-hidden flex-shrink-0">
+                        {item.product.images?.[0] ? (
+                          <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                            <ShoppingBag className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs text-white font-medium truncate">{item.product.name}</h4>
+                        <div className="text-[10px] text-zinc-400 font-mono">
+                          {item.quantity} Adet x {formatCurrency(item.product.price)}
+                        </div>
+                      </div>
+                      <div className="text-xs text-[#C5A059] font-serif-luxury">
+                        {formatCurrency(item.product.price * item.quantity)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Price Breakdown */}
+                <div className="space-y-2.5 pt-4 border-t border-white/10 text-xs">
+                  <div className="flex justify-between text-zinc-300">
                     <span>Ara Toplam</span>
-                    <span className="text-zinc-200">{formatCurrency(currentSubtotal)}</span>
+                    <span className="font-mono">{formatCurrency(currentSubtotal)}</span>
                   </div>
 
                   {discountAmount > 0 && (
-                    <div className="flex justify-between text-emerald-400 font-semibold animate-in fade-in">
-                      <span className="flex items-center gap-1">
-                        <Tag className="w-3.5 h-3.5" /> Kupon İndirimi ({appliedCoupon?.code})
-                      </span>
-                      <span>-{formatCurrency(discountAmount)}</span>
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Kupon İndirimi {appliedCoupon ? `(${appliedCoupon.code})` : ''}</span>
+                      <span className="font-mono">-{formatCurrency(discountAmount)}</span>
                     </div>
                   )}
 
                   {paymentDiscount > 0 && (
-                    <div className="flex justify-between text-emerald-400 font-semibold animate-in fade-in">
-                      <span className="flex items-center gap-1">
-                        <Building2 className="w-3.5 h-3.5" /> Havale/EFT %3 Nakit İndirimi
-                      </span>
-                      <span>-{formatCurrency(paymentDiscount)}</span>
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Havale/EFT İndirimi (%3)</span>
+                      <span className="font-mono">-{formatCurrency(paymentDiscount)}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between text-zinc-400">
+                  <div className="flex justify-between text-zinc-300">
                     <span>Sigortalı Özel Kargo</span>
-                    <span className="text-zinc-200">
-                      {shippingCost === 0 ? (
-                        <span className="text-emerald-400 font-semibold">ÜCRETSİZ</span>
-                      ) : (
-                        formatCurrency(shippingCost)
-                      )}
+                    <span className={`font-mono ${isFreeShipping ? 'text-emerald-400 font-bold' : ''}`}>
+                      {isFreeShipping ? 'ÜCRETSİZ' : '₺250'}
                     </span>
                   </div>
 
-                  <div className="pt-3 border-t border-white/10 flex justify-between items-baseline">
-                    <span className="text-sm font-bold text-white uppercase tracking-wider">Ödenecek Tutar</span>
-                    <span className="font-serif-luxury text-2xl font-bold text-[#C5A059]">
+                  <div className="flex justify-between items-baseline pt-3 border-t border-white/10">
+                    <span className="text-sm font-semibold text-white">Ödenecek Tutar</span>
+                    <span className="font-serif-luxury text-xl sm:text-2xl text-[#C5A059] font-bold">
                       {formatCurrency(finalPayableTotal)}
                     </span>
                   </div>
                 </div>
 
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      <span>Sipariş Güvenle İşleniyor...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      <span>{formatCurrency(finalPayableTotal)} Siparişi Tamamla</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Assurance Badges */}
-                <div className="grid grid-cols-2 gap-2 pt-2 text-[10px] text-zinc-400">
-                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
+                {/* Trust Badges */}
+                <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-2 text-[10px] text-zinc-400">
+                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                    <span>256-Bit SSL Güvenlik</span>
+                    <span>3D Secure</span>
                   </div>
-                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
+                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
                     <Truck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                    <span>Özel Sandıklı Kargo</span>
+                    <span>Ahşap Sandık</span>
                   </div>
-                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                    <span>2 Yıl Tasarım Garantisi</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
+                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
                     <Sparkles className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                    <span>14 Gün Kolay İade</span>
+                    <span>2 Yıl Garanti</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
+                    <CheckCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
+                    <span>14 Gün İade</span>
                   </div>
                 </div>
 
+                {/* Supported Payment Cards without highlights */}
+                <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
+                  <span className="text-zinc-500">Güvenli Kart Altyapısı</span>
+                  <div className="flex items-center gap-2">
+                    <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-75" />
+                    <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-75" />
+                  </div>
+                </div>
               </div>
-
             </div>
 
-          </form>
-        </main>
-      )}
+          </div>
 
-    </div>
+        </div>
+      </main>
+    </>
   );
 };

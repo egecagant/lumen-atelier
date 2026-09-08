@@ -81,6 +81,9 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
     dimensions: '',
     material: '',
     lightSpecs: '2700K Sıcak Beyaz | E27 Duy | LED',
+    bulbType: 'E27 Standart Vidalı Duy',
+    powerConsumption: '8W LED (220V)',
+    cableLength: '180 cm Tekstil Örgülü Kablo',
     energyClass: 'A++',
     featured: false,
     isNewArrival: true,
@@ -111,6 +114,9 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
       dimensions: 'Y: 35cm | Çap: 20cm',
       material: 'Masif Pirinç, Üfleme Cam, Mermer',
       lightSpecs: '2700K Sıcak Amber | E27 LED Uyumlu',
+      bulbType: 'E27 Standart Vidalı Duy',
+      powerConsumption: '8W LED Ampul (220V)',
+      cableLength: '180 cm Tekstil Örgülü Kablo',
       energyClass: 'A++',
       featured: true,
       isNewArrival: true,
@@ -151,6 +157,9 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
       dimensions: prod.dimensions || '',
       material: prod.material || '',
       lightSpecs: prod.lightSpecs || '',
+      bulbType: prod.bulbType || 'E27 Standart Vidalı Duy',
+      powerConsumption: prod.powerConsumption || '8W LED (220V)',
+      cableLength: prod.cableLength || '180 cm Tekstil Örgülü Kablo',
       energyClass: prod.energyClass || 'A++',
       featured: prod.featured || false,
       isNewArrival: prod.isNewArrival || false,
@@ -358,6 +367,9 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
         dimensions: formData.dimensions,
         material: formData.material,
         lightSpecs: formData.lightSpecs,
+        bulbType: formData.bulbType,
+        powerConsumption: formData.powerConsumption,
+        cableLength: formData.cableLength,
         energyClass: formData.energyClass,
         featured: formData.featured,
         isNewArrival: formData.isNewArrival,
@@ -1092,6 +1104,48 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                     value={formData.lightSpecs}
                     onChange={(e) => setFormData({ ...formData, lightSpecs: e.target.value })}
                     placeholder="2700K Sıcak Işık | E27 LED"
+                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Technical Specifications Row (Legal & Consumer Specs) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
+                    Duy Tipi (bulbType)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.bulbType || ''}
+                    onChange={(e) => setFormData({ ...formData, bulbType: e.target.value })}
+                    placeholder="E27 Standart Vidalı Duy"
+                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
+                    Güç Tüketimi (powerConsumption)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.powerConsumption || ''}
+                    onChange={(e) => setFormData({ ...formData, powerConsumption: e.target.value })}
+                    placeholder="8W Enerji Tasarruflu LED (220V)"
+                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
+                    Kablo Uzunluğu & Tipi (cableLength)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.cableLength || ''}
+                    onChange={(e) => setFormData({ ...formData, cableLength: e.target.value })}
+                    placeholder="180 cm Tekstil Örgülü Kablo"
                     className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-zinc-200 focus:outline-none"
                   />
                 </div>

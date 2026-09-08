@@ -34,6 +34,9 @@ export interface Product {
   dimensions?: string;
   material?: string;
   lightSpecs?: string; // e.g. "2700K Sıcak Beyaz | E27 Duy | 12W LED Uyumlu"
+  bulbType?: string; // e.g. "E27 Duy LED Uyumlu"
+  powerConsumption?: string; // e.g. "12W (Maks. 40W)"
+  cableLength?: string; // e.g. "1.8m Örgülü Tekstil Kablo"
   energyClass?: string; // e.g. "A++"
   featured?: boolean;
   isNewArrival?: boolean;
@@ -78,6 +81,8 @@ export interface UserProfile {
   role: 'admin' | 'customer';
   phone?: string;
   savedAddresses?: SavedAddress[];
+  marketingConsent?: boolean;
+  marketingConsentAt?: number;
   createdAt: number;
   updatedAt?: number;
 }
@@ -143,13 +148,15 @@ export interface Order {
   shipping: number;
   total: number;
   status: 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  paymentMethod: 'iyzico' | 'stripe' | 'bank_transfer' | 'cash_on_delivery';
+  paymentMethod: 'iyzico' | 'bank_transfer' | 'cash_on_delivery';
   iyzicoPaymentId?: string;
   iyzicoToken?: string;
-  stripePaymentId?: string;
   bankTransferReference?: string;
   notes?: string;
   adminNote?: string;
+  marketingConsent?: boolean;
+  marketingConsentAt?: number;
+  contractsAcceptedAt?: number;
   createdAt: number;
 }
 

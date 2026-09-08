@@ -23,13 +23,13 @@ import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
 
-interface StripeCheckoutModalProps {
+interface IyzicoCheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   directBuyItem?: { product: Product; quantity: number } | null;
 }
 
-export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
+export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
   isOpen,
   onClose,
   directBuyItem,
@@ -235,7 +235,7 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
               </h2>
               <div className="flex items-center gap-2 text-[11px] text-[#C5A059]">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>256-Bit SSL • BDDK Lisanslı Güvenli Altyapı</span>
+                <span>PCI-DSS Seviye 1 • 3D Secure &amp; TLS Güvenlik</span>
               </div>
             </div>
           </div>
@@ -535,4 +535,3 @@ export const StripeCheckoutModal: React.FC<StripeCheckoutModalProps> = ({
     </div>
   );
 };
-export const IyzicoCheckoutModal = StripeCheckoutModal;

@@ -269,7 +269,7 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
               </span>
             </h3>
             <p className="text-xs text-zinc-400 font-light mt-1">
-              Vitrinden Stripe ve Havale/EFT ile tamamlanan lamba siparişleri, dahili yönetici notları ve sevkiyat yönetimi.
+              Vitrinden iyzico ve Havale/EFT ile tamamlanan lamba siparişleri, dahili yönetici notları ve sevkiyat yönetimi.
             </p>
           </div>
 
@@ -696,7 +696,11 @@ export const OrdersManager: React.FC<OrdersManagerProps> = ({ orders: initialOrd
                 <div>
                   <span className="text-zinc-500 block text-[10px] uppercase tracking-wider">Ödeme Yöntemi</span>
                   <span className="text-zinc-200 font-semibold text-xs">
-                    {selectedOrder.paymentMethod === 'bank_transfer' ? 'Banka Havalesi / EFT' : 'Kredi Kartı (Stripe)'}
+                    {selectedOrder.paymentMethod === 'bank_transfer'
+                      ? 'Banka Havalesi / EFT'
+                      : selectedOrder.paymentMethod === 'cash_on_delivery'
+                      ? 'Kapıda Ödeme'
+                      : 'Kredi / Banka Kartı (iyzico 3D Secure)'}
                   </span>
                   {selectedOrder.bankTransferReference && (
                     <p className="font-mono text-[#C5A059] text-[11px] mt-0.5">Ref: {selectedOrder.bankTransferReference}</p>

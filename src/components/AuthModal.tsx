@@ -36,6 +36,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
   // Phone state
@@ -55,6 +56,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPhoneStep('enter_phone');
       setOtpCode('');
       setResetSent(false);
+      setMarketingConsent(false);
       setTab('login');
     }
   }, [isOpen]);
@@ -117,7 +119,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           setLoading(false);
           return;
         }
-        await registerWithEmail(email, password, name);
+        await registerWithEmail(email, password, name, marketingConsent);
         onClose();
         if (isRootAdminEmail(email) && onSuccessAdmin) {
           onSuccessAdmin();
@@ -512,6 +514,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   />
                   <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 </div>
+
+                {tab === 'register' && (
+                  <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer select-none pt-1">
+                    <input
+                      type="checkbox"
+                      id="register-marketing-consent-checkbox"
+                      checked={marketingConsent}
+                      onChange={(e) => setMarketingConsent(e.target.checked)}
+                      className="mt-0.5 rounded border-zinc-700 bg-black/50 text-[#C5A059] focus:ring-0 flex-shrink-0 cursor-pointer"
+                    />
+                    <span className="leading-relaxed text-[11px]">
+                      Kampanya ve yeni ürün duyurularından e-posta ile haberdar olmak istiyorum. Onayımı dilediğim zaman geri çekebilirim.
+                    </span>
+                  </label>
+                )}
               </div>
 
               <button

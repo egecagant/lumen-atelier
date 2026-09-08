@@ -31,7 +31,7 @@ interface AuthContextType {
   closeAuthModal: () => void;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   loginWithGoogle: () => Promise<any>;
-  registerWithEmail: (email: string, pass: string, name: string) => Promise<void>;
+  registerWithEmail: (email: string, pass: string, name: string, marketingConsent?: boolean) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   initRecaptcha: (containerId: string) => RecaptchaVerifier;
   sendPhoneOtp: (phoneNumber: string, verifier: RecaptchaVerifier) => Promise<ConfirmationResult>;
@@ -141,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return result.user;
   };
 
-  const registerWithEmail = async (email: string, pass: string, name: string) => {
+  const registerWithEmail = async (email: string, pass: string, name: string, marketingConsent = false) => {
     const res = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(res.user, { displayName: name });
     const isRootAdmin = isRootAdminEmail(email);
@@ -150,6 +150,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: res.user.email || '',
       displayName: name,
       role: isRootAdmin ? 'admin' : 'customer',
+      marketingConsent: Boolean(marketingConsent),
+      marketingConsentAt: marketingConsent ? Date.now() : undefined,
       createdAt: Date.now()
     };
     await setDoc(doc(db, COLLECTIONS.USERS, res.user.uid), profile);

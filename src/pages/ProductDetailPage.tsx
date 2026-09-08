@@ -20,6 +20,8 @@ import {
   Ruler, 
   Layers, 
   Zap,
+  Lightbulb,
+  Cable,
   Share2,
   ChevronLeft,
   ArrowLeft,
@@ -481,7 +483,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       className="w-full py-4 glass-panel hover:bg-white/10 text-[#C5A059] border border-[#C5A059]/50 hover:border-[#C5A059] rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>{isPreorder ? 'Ön Sipariş ile Hemen Al (Stripe & 3D Secure)' : 'Hemen Satın Al (Stripe & 3D Secure)'}</span>
+                      <span>{isPreorder ? 'Ön Sipariş ile Hemen Al (3D Secure)' : 'Hemen Satın Al (3D Secure ile Güvenli Öde)'}</span>
                     </button>
                   )}
                 </div>
@@ -569,11 +571,38 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   </div>
                 )}
 
+                {/* Duy Tipi (bulbType) */}
+                <div className="p-4 rounded-2xl bento-card flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-medium">
+                    <Lightbulb className="w-4 h-4 text-[#C5A059]" />
+                    <span>Duy Tipi</span>
+                  </div>
+                  <span className="text-xs font-semibold text-zinc-100">{product.bulbType || 'E27 Standart Vidalı Duy / LED'}</span>
+                </div>
+
+                {/* Güç Tüketimi (powerConsumption) */}
+                <div className="p-4 rounded-2xl bento-card flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-medium">
+                    <Zap className="w-4 h-4 text-[#C5A059]" />
+                    <span>Güç Tüketimi</span>
+                  </div>
+                  <span className="text-xs font-semibold text-zinc-100">{product.powerConsumption || '8W Enerji Tasarruflu LED (220V)'}</span>
+                </div>
+
+                {/* Kablo Uzunluğu ve Tipi (cableLength) */}
+                <div className="p-4 rounded-2xl bento-card flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-medium">
+                    <Cable className="w-4 h-4 text-[#C5A059]" />
+                    <span>Kablo Uzunluğu & Tipi</span>
+                  </div>
+                  <span className="text-xs font-semibold text-zinc-100">{product.cableLength || '180 cm Tekstil Örgülü Kablo'}</span>
+                </div>
+
                 {product.lightSpecs && (
                   <div className="p-4 rounded-2xl bento-card flex items-center justify-between">
                     <div className="flex items-center gap-2.5 text-zinc-400 text-xs font-medium">
-                      <Zap className="w-4 h-4 text-[#C5A059]" />
-                      <span>Işık & Duy Yapısı</span>
+                      <Sparkles className="w-4 h-4 text-[#C5A059]" />
+                      <span>Işık & Renk Sıcaklığı</span>
                     </div>
                     <span className="text-xs font-semibold text-zinc-100">{product.lightSpecs}</span>
                   </div>

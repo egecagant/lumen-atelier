@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 32" width="48" height="32">
+  <rect width="48" height="32" rx="4" fill="#005BA9"/>
+  <text x="24" y="20" fill="#00A3E0" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="12" text-anchor="middle" letter-spacing="1">TROY</text>
+  <circle cx="37" cy="11" r="2.5" fill="#E30613"/>
+</svg>

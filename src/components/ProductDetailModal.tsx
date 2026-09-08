@@ -472,7 +472,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 className="w-full py-3 glass-panel hover:bg-white/10 text-[#C5A059] border border-[#C5A059]/40 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{isPreorder ? 'Ön Sipariş ile Hemen Al' : (settings.productDetailInstantCheckoutText || 'Hemen Al & Stripe ile Güvenli Öde')}</span>
+                <span>{isPreorder ? 'Ön Sipariş ile Hemen Al' : (settings.productDetailInstantCheckoutText || 'Hemen Al & 3D Secure ile Güvenli Öde')}</span>
               </button>
             )}
 

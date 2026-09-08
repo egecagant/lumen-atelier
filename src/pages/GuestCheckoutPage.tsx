@@ -71,7 +71,7 @@ export const GuestCheckoutPage: React.FC = () => {
   }, [currentSubtotal]);
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'bank_transfer' | 'cash_on_delivery'>('stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'iyzico' | 'bank_transfer' | 'cash_on_delivery'>('iyzico');
 
   // Coupon Input State
   const [couponInput, setCouponInput] = useState('');
@@ -95,11 +95,6 @@ export const GuestCheckoutPage: React.FC = () => {
     orderNote: ''
   });
 
-  // Credit Card Form State
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvc, setCardCvc] = useState('');
-  const [cardName, setCardName] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(true);
 
   // Order processing state
@@ -111,13 +106,6 @@ export const GuestCheckoutPage: React.FC = () => {
   const shippingCost = (currentSubtotal - discountAmount > 5000 || currentSubtotal === 0) ? 0 : 250;
   const paymentDiscount = paymentMethod === 'bank_transfer' ? Math.round((currentSubtotal - discountAmount) * 0.03) : 0;
   const finalPayableTotal = Math.max(0, currentSubtotal - discountAmount - paymentDiscount + shippingCost);
-
-  const handleFillTestCard = () => {
-    setCardNumber('4242 •••• •••• 4242');
-    setCardExpiry('12/28');
-    setCardCvc('888');
-    setCardName(address.fullName || 'Misafir Müşteri');
-  };
 
   const handleApplyCoupon = (targetEl?: HTMLElement | null) => {
     if (!couponInput.trim()) return;
@@ -187,7 +175,7 @@ export const GuestCheckoutPage: React.FC = () => {
     setLoading(true);
 
     // Online card payment
-    if (paymentMethod === 'stripe') {
+    if (paymentMethod === 'iyzico') {
       try {
         const payload = {
           items: items.map(item => ({
@@ -702,16 +690,19 @@ export const GuestCheckoutPage: React.FC = () => {
                   {/* Credit Card */}
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('stripe')}
+                    onClick={() => setPaymentMethod('iyzico')}
                     className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
-                      paymentMethod === 'stripe'
+                      paymentMethod === 'iyzico'
                         ? 'bg-[#C5A059]/15 border-[#C5A059] text-white shadow-lg'
                         : 'bg-black/30 border-white/10 text-zinc-400 hover:border-white/20'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <CreditCard className={`w-5 h-5 ${paymentMethod === 'stripe' ? 'text-[#C5A059]' : 'text-zinc-500'}`} />
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">3D Secure</span>
+                      <CreditCard className={`w-5 h-5 ${paymentMethod === 'iyzico' ? 'text-[#C5A059]' : 'text-zinc-500'}`} />
+                      <div className="flex items-center gap-1.5 opacity-80">
+                        <img src="/payment/visa.svg" alt="Visa" className="h-3.5 w-auto object-contain" />
+                        <img src="/payment/mastercard.svg" alt="Mastercard" className="h-3.5 w-auto object-contain" />
+                      </div>
                     </div>
                     <div>
                       <div className="font-semibold text-xs text-white">Kredi / Banka Kartı</div>
@@ -761,70 +752,30 @@ export const GuestCheckoutPage: React.FC = () => {
                 </div>
 
                 {/* Details per method */}
-                {paymentMethod === 'stripe' && (
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3 text-xs">
+                {paymentMethod === 'iyzico' && (
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2.5 text-xs">
                     <div className="flex items-center justify-between text-zinc-300">
-                      <span className="font-medium flex items-center gap-1.5">
+                      <span className="font-semibold flex items-center gap-1.5 text-white">
                         <Lock className="w-3.5 h-3.5 text-[#C5A059]" />
-                        <span>Kredi Kartı Güvenli Ödeme Ekranı</span>
+                        <span>iyzico 3D Secure Güvenli Ödeme Geçidi</span>
                       </span>
-                      <button
-                        type="button"
-                        onClick={handleFillTestCard}
-                        className="text-[10px] text-[#C5A059] hover:underline cursor-pointer font-medium"
-                      >
-                        Örnek Kart Bilgilerini Doldur
-                      </button>
+                      <span className="text-[10px] bg-[#C5A059]/20 text-[#C5A059] border border-[#C5A059]/30 px-2 py-0.5 rounded font-mono">
+                        PCI-DSS SEVİYE 1
+                      </span>
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-zinc-400 mb-1">Kart Üzerindeki İsim</label>
-                        <input
-                          type="text"
-                          value={cardName}
-                          onChange={(e) => setCardName(e.target.value)}
-                          placeholder={address.fullName || "Ad Soyad"}
-                          className="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                        />
-                      </div>
+                    <p className="text-zinc-300 text-[11px] leading-relaxed">
+                      'Siparişi Tamamla' butonuna bastığınızda TCMB lisanslı ve PCI-DSS Seviye 1 sertifikalı güvenli <strong>iyzico 3D Secure</strong> ödeme sayfasına yönlendirileceksiniz. Kredi veya banka kartı bilgileriniz doğrudan iyzico güvenli altyapısında işlenir, sunucularımızda asla saklanmaz.
+                    </p>
 
-                      <div>
-                        <label className="block text-zinc-400 mb-1">Kart Numarası</label>
-                        <input
-                          type="text"
-                          value={cardNumber}
-                          onChange={(e) => setCardNumber(e.target.value)}
-                          placeholder="•••• •••• •••• ••••"
-                          maxLength={19}
-                          className="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-zinc-200 font-mono focus:border-[#C5A059] focus:outline-none"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-zinc-400 mb-1">Son Kullanma (AA/YY)</label>
-                          <input
-                            type="text"
-                            value={cardExpiry}
-                            onChange={(e) => setCardExpiry(e.target.value)}
-                            placeholder="12/28"
-                            maxLength={5}
-                            className="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-zinc-200 font-mono focus:border-[#C5A059] focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-zinc-400 mb-1">CVC / Güvenlik Kodu</label>
-                          <input
-                            type="text"
-                            value={cardCvc}
-                            onChange={(e) => setCardCvc(e.target.value)}
-                            placeholder="888"
-                            maxLength={4}
-                            className="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-zinc-200 font-mono focus:border-[#C5A059] focus:outline-none"
-                          />
-                        </div>
-                      </div>
+                    <div className="pt-1 flex flex-wrap items-center gap-3 text-[11px] text-zinc-400">
+                      <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                        <ShieldCheck className="w-3.5 h-3.5" /> 3D Secure &amp; TLS Şifreleme
+                      </span>
+                      <span>•</span>
+                      <span>Tüm Banka & Kredi Kartları</span>
+                      <span>•</span>
+                      <span>Taksit İmkanı</span>
                     </div>
                   </div>
                 )}
@@ -858,12 +809,30 @@ export const GuestCheckoutPage: React.FC = () => {
                   <label className="flex items-start gap-3 cursor-pointer text-xs text-zinc-300">
                     <input
                       type="checkbox"
+                      required
                       checked={termsAccepted}
                       onChange={(e) => setTermsAccepted(e.target.checked)}
                       className="mt-0.5 rounded border-white/20 bg-black/40 text-[#C5A059] focus:ring-[#C5A059] cursor-pointer"
                     />
                     <span>
-                      <span className="text-[#C5A059] hover:underline">Mesafeli Satış Sözleşmesi</span>'ni, Gizlilik ve İptal/İade Koşulları'nı okudum ve kabul ediyorum.
+                      <Link
+                        to="/mesafeli-satis-sozlesmesi"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#C5A059] hover:underline"
+                      >
+                        Mesafeli Satış Sözleşmesi
+                      </Link>
+                      'ni ve{' '}
+                      <Link
+                        to="/teslimat-ve-iade"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#C5A059] hover:underline"
+                      >
+                        Teslimat/İade Şartları
+                      </Link>
+                      'nı okudum, onaylıyorum.
                     </span>
                   </label>
                 </div>
@@ -1003,11 +972,11 @@ export const GuestCheckoutPage: React.FC = () => {
                 {/* SUBMIT BUTTON */}
                 <button
                   type="submit"
-                  disabled={loading}
-                  className={`w-full py-4 rounded-2xl text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-2xl cursor-pointer ${
-                    loading 
-                      ? 'bg-zinc-800 text-zinc-400 cursor-not-allowed'
-                      : 'bg-[#C5A059] hover:bg-[#d6b26b] active:scale-[0.99] text-black shadow-[#C5A059]/20'
+                  disabled={loading || !termsAccepted}
+                  className={`w-full py-4 rounded-2xl text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-2xl ${
+                    loading || !termsAccepted
+                      ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50'
+                      : 'bg-[#C5A059] hover:bg-[#d6b26b] active:scale-[0.99] text-black shadow-[#C5A059]/20 cursor-pointer'
                   }`}
                 >
                   {loading ? (
@@ -1027,7 +996,7 @@ export const GuestCheckoutPage: React.FC = () => {
                 <div className="space-y-2 pt-2 text-[11px] text-zinc-400">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0" />
-                    <span>256-Bit SSL ve 3D Secure ile %100 Güvenli Ödeme</span>
+                    <span>PCI-DSS Seviye 1 ve 3D Secure ile Güvenli Ödeme</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Truck className="w-4 h-4 text-[#C5A059] shrink-0" />
@@ -1036,6 +1005,14 @@ export const GuestCheckoutPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-[#C5A059] shrink-0" />
                     <span>2 Yıl Birebir Atölye ve Malzeme Garantisi</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
+                    <span className="text-zinc-500">Güvenli Kart Altyapısı</span>
+                    <div className="flex items-center gap-2">
+                      <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-75" />
+                      <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-75" />
+                    </div>
                   </div>
                 </div>
 

@@ -307,6 +307,71 @@ export const ContentEditor: React.FC = () => {
 
             <div>
               <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2 font-medium">
+                Özel Logo Görseli (URL veya Dosya Yükleme)
+              </label>
+              <div className="flex flex-col sm:flex-row items-center gap-4 bg-black/40 p-4 rounded-xl border border-white/10">
+                {formData.brandLogoUrl ? (
+                  <div className="relative group bg-zinc-900 border border-white/10 rounded-lg p-2 flex items-center justify-center h-16 w-36 flex-shrink-0">
+                    <img 
+                      src={formData.brandLogoUrl} 
+                      alt="Marka Logosu" 
+                      className="max-h-full max-w-full object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleChange('brandLogoUrl', '')}
+                      className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 shadow transition-colors"
+                      title="Logoyu Kaldır"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-16 w-36 flex-shrink-0 border border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center text-zinc-500 text-[11px] bg-white/[0.02]">
+                    <span>Metin Logo Aktif</span>
+                  </div>
+                )}
+
+                <div className="flex-1 w-full space-y-2">
+                  <input
+                    type="url"
+                    value={formData.brandLogoUrl || ''}
+                    onChange={(e) => handleChange('brandLogoUrl', e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
+                    placeholder="https://... veya aşağıdan dosya seçin"
+                  />
+                  <div className="flex items-center gap-3">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/15 text-zinc-200 rounded-lg text-xs font-medium transition-colors border border-white/10">
+                      <Plus className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <span>Cihazdan Logo Dosyası Seç (.png, .svg, .webp)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              if (event.target?.result) {
+                                handleChange('brandLogoUrl', event.target.result as string);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                    <span className="text-[11px] text-zinc-400">
+                      (Boş bırakıldığında lüks tipografik LUMEN logosu kullanılır)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2 font-medium">
                 Marka Kısa Açıklaması
               </label>
               <textarea
@@ -968,11 +1033,11 @@ export const ContentEditor: React.FC = () => {
 
               <div>
                 <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2 font-medium">
-                  Hızlı Satın Al (Stripe) Buton Metni
+                  Hızlı Satın Al (3D Secure) Buton Metni
                 </label>
                 <input
                   type="text"
-                  value={formData.productDetailInstantCheckoutText || 'Hemen Al & Stripe ile Güvenli Öde'}
+                  value={formData.productDetailInstantCheckoutText || 'Hemen Al & 3D Secure ile Güvenli Öde'}
                   onChange={(e) => handleChange('productDetailInstantCheckoutText', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
                 />
@@ -1054,11 +1119,11 @@ export const ContentEditor: React.FC = () => {
 
             <div>
               <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2 font-medium">
-                Güvenlik Rozeti ve SSL Notu
+                Güvenlik Rozeti ve Ödeme Notu
               </label>
               <input
                 type="text"
-                value={formData.cartSecurityBadgeText || '256-Bit SSL & 3D Secure Korumalı Güvenli Ödeme'}
+                value={formData.cartSecurityBadgeText || 'PCI-DSS Seviye 1 & 3D Secure Korumalı Güvenli Ödeme'}
                 onChange={(e) => handleChange('cartSecurityBadgeText', e.target.value)}
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
               />
@@ -1150,7 +1215,7 @@ export const ContentEditor: React.FC = () => {
                   value={formData.contactEmailText}
                   onChange={(e) => handleChange('contactEmailText', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-zinc-300 focus:outline-none focus:border-[#C5A059]"
-                  placeholder="hello@lumenlatelier.com"
+                  placeholder="hello@lumenatelier.com"
                 />
               </div>
 
@@ -1318,7 +1383,7 @@ export const ContentEditor: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.footerCol3Title || 'Yönetim & Güvenlik'}
+                  value={formData.footerCol3Title || 'Güvenli Ödeme Altyapısı'}
                   onChange={(e) => handleChange('footerCol3Title', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
                 />
@@ -1335,6 +1400,7 @@ export const ContentEditor: React.FC = () => {
                   value={formData.footerQualityBadge}
                   onChange={(e) => handleChange('footerQualityBadge', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-[#C5A059]"
+                  placeholder="Tescilli Özgün Tasarım & 2 Yıl Garanti"
                 />
               </div>
 
