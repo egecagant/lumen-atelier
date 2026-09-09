@@ -111,10 +111,10 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleApplyCoupon = (targetEl?: HTMLElement | null) => {
+  const handleApplyCoupon = async (targetEl?: HTMLElement | null) => {
     if (!couponInput.trim()) return;
 
-    const res = applyCoupon(couponInput, subtotal);
+    const res = await applyCoupon(couponInput, subtotal);
     if (res.success) {
       triggerGoldConfetti(targetEl);
       setCouponFeedback({ type: 'success', message: res.message });

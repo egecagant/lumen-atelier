@@ -6,20 +6,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { initializeApp, getApps } from 'firebase/app';
-import {
-  getFirestore,
-  Firestore,
-  doc,
-  getDoc,
-  setDoc,
-  getDocs,
-  collection,
-  query,
-  where,
-  deleteDoc,
-  writeBatch
-} from 'firebase/firestore';
+import { initializeApp as initAdminApp, cert, getApps as getAdminApps, App as AdminApp } from 'firebase-admin/app';
+import { getFirestore as getAdminFirestore, Firestore as AdminFirestore } from 'firebase-admin/firestore';
 import firebaseConfigData from './firebase-applet-config.json' with { type: 'json' };
 import { generateGoogleMerchantXml } from './src/lib/googleMerchantFeed.ts';
 import { MAINTENANCE_MODE } from './src/lib/maintenance.ts';
@@ -27,19 +15,50 @@ import { sendOrderConfirmationEmail, isResendConfigured } from './server/emailSe
 
 dotenv.config();
 
-// Initialize Firebase SDK for server-side database access
-let cachedDb: Firestore | null = null;
+// Initialize Firebase Admin SDK for privileged server-side database access (bypasses client security rules)
+let cachedDb: AdminFirestore | null = null;
 
-function getDb(): Firestore {
+function getDb(): AdminFirestore {
   if (cachedDb) return cachedDb;
 
-  const app = getApps().length === 0 ? initializeApp(firebaseConfigData) : getApps()[0];
+  let adminApp: AdminApp;
+  const existingApps = getAdminApps();
+  if (existingApps.length > 0) {
+    adminApp = existingApps[0];
+  } else {
+    let serviceAccount: any = null;
+    const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (rawServiceAccount) {
+      try {
+        serviceAccount = typeof rawServiceAccount === 'string'
+          ? JSON.parse(rawServiceAccount)
+          : rawServiceAccount;
+      } catch (parseErr) {
+        console.error('[Firebase Admin] FIREBASE_SERVICE_ACCOUNT JSON parse hatası:', parseErr);
+      }
+    }
+
+    if (serviceAccount && (serviceAccount.private_key || serviceAccount.client_email)) {
+      adminApp = initAdminApp({
+        credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id || firebaseConfigData.projectId
+      });
+      console.log(`[Firebase Admin] Service Account ile başlatıldı (${serviceAccount.client_email || serviceAccount.project_id})`);
+    } else {
+      // Fallback: Google Cloud Application Default Credentials (ADC) or project identifier
+      adminApp = initAdminApp({
+        projectId: firebaseConfigData.projectId
+      });
+      console.log(`[Firebase Admin] Varsayılan kimlik bilgileri (ADC/Proje: ${firebaseConfigData.projectId}) ile başlatıldı`);
+    }
+  }
+
   const databaseId = firebaseConfigData.firestoreDatabaseId;
   cachedDb = (databaseId && databaseId !== '(default)')
-    ? getFirestore(app, databaseId)
-    : getFirestore(app);
+    ? getAdminFirestore(adminApp, databaseId)
+    : getAdminFirestore(adminApp);
 
-  console.log(`[Firebase] Initialized Firestore client for project "${firebaseConfigData.projectId}" db "${databaseId}"`);
+  console.log(`[Firebase Admin] Firestore bağlandı: Proje "${firebaseConfigData.projectId}", DB "${databaseId || '(default)'}"`);
   return cachedDb;
 }
 
@@ -135,14 +154,14 @@ async function savePendingOrder(keys: string[], data: any): Promise<void> {
   // 2. Write to Firestore pending_orders collection via batch write
   try {
     const db = getDb();
-    const batch = writeBatch(db);
+    const batch = db.batch();
     const cleaned = cleanData({
       ...data,
       updatedAt: Date.now()
     });
 
     for (const k of validKeys) {
-      const docRef = doc(db, 'pending_orders', k);
+      const docRef = db.collection('pending_orders').doc(k);
       batch.set(docRef, cleaned);
     }
 
@@ -169,8 +188,8 @@ async function loadPendingOrder(...keys: (string | undefined | null)[]): Promise
   try {
     const db = getDb();
     for (const k of validKeys) {
-      const docSnap = await getDoc(doc(db, 'pending_orders', k));
-      if (docSnap.exists()) {
+      const docSnap = await db.collection('pending_orders').doc(k).get();
+      if (docSnap.exists) {
         const data = docSnap.data();
         // Also populate in-memory map for fast subsequent access
         pendingOrders.set(k, data);
@@ -197,9 +216,9 @@ async function clearPendingOrder(...keys: (string | undefined | null)[]): Promis
   // 2. Delete from Firestore pending_orders collection
   try {
     const db = getDb();
-    const batch = writeBatch(db);
+    const batch = db.batch();
     for (const k of validKeys) {
-      const docRef = doc(db, 'pending_orders', k);
+      const docRef = db.collection('pending_orders').doc(k);
       batch.delete(docRef);
     }
     await batch.commit();
@@ -224,6 +243,31 @@ function getBaseAppUrl(req: express.Request): string {
   const proto = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
   return `${proto}://${host}`;
 }
+
+// Server-authoritative fallback catalogue if Firestore has not finished seeding
+const DEFAULT_PRODUCTS_CATALOG: Record<string, { name: string; price: number; images: string[]; active: boolean; stockStatus?: string }> = {
+  'astronot-kozmik-cocuk-masa-lambasi': {
+    name: 'Astronot Kozmik Çocuk Masa Lambası',
+    price: 345,
+    images: ['https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=1000&q=80'],
+    active: true,
+    stockStatus: 'in_stock'
+  },
+  'nero-marquina-mermer-pirinc-heykelsi-lamba': {
+    name: 'Nero Marquina Mermer & Pirinç Heykelsi Lamba',
+    price: 1890,
+    images: ['https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=1000&q=80'],
+    active: true,
+    stockStatus: 'in_stock'
+  },
+  'amber-glow-ufleme-cam-sarkit-avize': {
+    name: 'Amber Glow Üfleme Cam Sarkıt Avize',
+    price: 1420,
+    images: ['https://images.unsplash.com/photo-1540932239986-30128078f3c5?auto=format&fit=crop&w=1000&q=80'],
+    active: true,
+    stockStatus: 'in_stock'
+  }
+};
 
 // Helper for server-side verification of items and coupons against Firestore
 async function verifyOrderSecurity(items: any[], discountCode?: string, paymentMethod?: string) {
@@ -255,11 +299,11 @@ async function verifyOrderSecurity(items: any[], discountCode?: string, paymentM
 
     let productData: any = null;
     try {
-      const productDoc = await getDoc(doc(db, 'products', productId));
-      if (productDoc.exists()) {
+      const productDoc = await db.collection('products').doc(productId).get();
+      if (productDoc.exists) {
         productData = productDoc.data();
       } else {
-        const querySnap = await getDocs(query(collection(db, 'products'), where('slug', '==', productId)));
+        const querySnap = await db.collection('products').where('slug', '==', productId).get();
         if (!querySnap.empty) {
           productData = querySnap.docs[0].data();
         }
@@ -269,15 +313,10 @@ async function verifyOrderSecurity(items: any[], discountCode?: string, paymentM
     }
 
     if (!productData) {
-      // Fallback: check if client provided valid price
-      const clientPrice = Number(item.price || item.product?.price);
-      if (!isNaN(clientPrice) && clientPrice > 0) {
-        productData = {
-          name: item.productName || item.name || item.product?.name || 'LUMEN Atelier Tasarım Lamba',
-          price: clientPrice,
-          images: item.productImage ? [item.productImage] : (item.product?.images || []),
-          active: true
-        };
+      // Check server-side authoritative default catalog
+      const fallback = DEFAULT_PRODUCTS_CATALOG[productId];
+      if (fallback) {
+        productData = fallback;
       } else {
         throw new Error(`"${productId}" kimlikli ürün veritabanında bulunamadı veya satıştan kaldırılmış.`);
       }
@@ -321,12 +360,12 @@ async function verifyOrderSecurity(items: any[], discountCode?: string, paymentM
     let couponId: string = '';
 
     try {
-      const directCouponDoc = await getDoc(doc(db, 'coupons', rawCouponCode));
-      if (directCouponDoc.exists()) {
+      const directCouponDoc = await db.collection('coupons').doc(rawCouponCode).get();
+      if (directCouponDoc.exists) {
         couponData = directCouponDoc.data();
         couponId = directCouponDoc.id;
       } else {
-        const couponQuerySnap = await getDocs(query(collection(db, 'coupons'), where('code', '==', rawCouponCode)));
+        const couponQuerySnap = await db.collection('coupons').where('code', '==', rawCouponCode).get();
         if (!couponQuerySnap.empty) {
           couponData = couponQuerySnap.docs[0].data();
           couponId = couponQuerySnap.docs[0].id;
@@ -465,6 +504,144 @@ async function startServer() {
     message: { success: false, errorMessage: 'Kısa süre içinde çok fazla ödeme isteği gönderildi. Lütfen birkaç dakika bekleyiniz.' }
   });
 
+  // Rate limiter for coupon code verification (10 requests per minute per IP)
+  const couponValidateLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Çok fazla indirim kodu denemesi yaptınız. Lütfen 1 dakika sonra tekrar deneyin.'
+    }
+  });
+
+  // Coupon Validation Endpoint (evaluates coupon via Admin SDK without leaking other codes)
+  app.post('/api/coupons/validate', couponValidateLimiter, async (req, res) => {
+    try {
+      const { code, subtotal } = req.body || {};
+      const rawCode = (typeof code === 'string' ? code : '').trim().toUpperCase();
+      const currentSubtotal = Math.max(0, Number(subtotal) || 0);
+
+      const genericInvalidMessage = 'İndirim kodu geçersiz veya süresi dolmuş.';
+
+      if (!rawCode) {
+        return res.json({
+          success: false,
+          message: genericInvalidMessage
+        });
+      }
+
+      const db = getDb();
+      let couponData: any = null;
+      let couponId: string = '';
+
+      try {
+        const directCouponDoc = await db.collection('coupons').doc(rawCode).get();
+        if (directCouponDoc.exists) {
+          couponData = directCouponDoc.data();
+          couponId = directCouponDoc.id;
+        } else {
+          const couponQuerySnap = await db.collection('coupons').where('code', '==', rawCode).get();
+          if (!couponQuerySnap.empty) {
+            couponData = couponQuerySnap.docs[0].data();
+            couponId = couponQuerySnap.docs[0].id;
+          }
+        }
+      } catch (couponErr) {
+        console.warn(`[Coupon Validate] Firestore query warning for "${rawCode}":`, couponErr);
+      }
+
+      // Hardcoded fallback coupons if not yet seeded in Firestore
+      if (!couponData) {
+        if (rawCode === 'LUMEN10') {
+          couponData = { code: 'LUMEN10', discountType: 'percentage', discountValue: 10, active: true, description: '%10 Hoş Geldin İndirimi' };
+          couponId = 'LUMEN10';
+        } else if (rawCode === 'HOSGELDIN' || rawCode === 'HOSGELDIN15') {
+          couponData = { code: 'HOSGELDIN', discountType: 'percentage', discountValue: 15, active: true, description: '%15 İlk Sipariş İndirimi' };
+          couponId = 'HOSGELDIN';
+        }
+      }
+
+      // If coupon does not exist, return generic message without revealing code existence
+      if (!couponData) {
+        return res.json({
+          success: false,
+          message: genericInvalidMessage
+        });
+      }
+
+      // Check if inactive
+      if (couponData.active === false) {
+        return res.json({
+          success: false,
+          message: genericInvalidMessage
+        });
+      }
+
+      // Check expiration
+      if (couponData.expiresAt && Number(couponData.expiresAt) < Date.now()) {
+        return res.json({
+          success: false,
+          message: genericInvalidMessage
+        });
+      }
+
+      // Check usage limit
+      if (couponData.usageLimit && (couponData.usageCount || 0) >= Number(couponData.usageLimit)) {
+        return res.json({
+          success: false,
+          message: genericInvalidMessage
+        });
+      }
+
+      // Check minimum order amount
+      if (couponData.minOrderAmount && currentSubtotal < Number(couponData.minOrderAmount)) {
+        return res.json({
+          success: false,
+          message: `Bu indirim kodu en az ${Number(couponData.minOrderAmount).toLocaleString('tr-TR')} TL tutarındaki sepetlerde geçerlidir.`
+        });
+      }
+
+      // Calculate discount
+      let discountAmount = 0;
+      if (couponData.discountType === 'percentage') {
+        discountAmount = (currentSubtotal * Number(couponData.discountValue)) / 100;
+        if (couponData.maxDiscountAmount && discountAmount > Number(couponData.maxDiscountAmount)) {
+          discountAmount = Number(couponData.maxDiscountAmount);
+        }
+      } else {
+        discountAmount = Math.min(Number(couponData.discountValue), currentSubtotal);
+      }
+      discountAmount = Math.round(discountAmount);
+
+      const desc = couponData.discountType === 'percentage'
+        ? `%${couponData.discountValue} İndirim`
+        : `${Number(couponData.discountValue).toLocaleString('tr-TR')} TL İndirim`;
+
+      return res.json({
+        success: true,
+        message: `Tebrikler! "${couponData.code}" kodu başarıyla uygulandı (${desc}).`,
+        coupon: {
+          id: couponId || couponData.code,
+          code: couponData.code,
+          description: couponData.description || '',
+          discountType: couponData.discountType || 'percentage',
+          discountValue: Number(couponData.discountValue) || 0,
+          minOrderAmount: couponData.minOrderAmount ? Number(couponData.minOrderAmount) : undefined,
+          maxDiscountAmount: couponData.maxDiscountAmount ? Number(couponData.maxDiscountAmount) : undefined
+        },
+        discountAmount
+      });
+    } catch (err: any) {
+      console.error('[Coupon Validate] Error:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'İndirim kodu doğrulanırken bir hata oluştu.'
+      });
+    }
+  });
+
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({
@@ -540,7 +717,7 @@ async function startServer() {
 
       try {
         const db = getDb();
-        const snap = await getDocs(collection(db, 'products'));
+        const snap = await db.collection('products').get();
         if (!snap.empty) {
           snap.forEach(docSnap => {
             const data = docSnap.data();
@@ -653,7 +830,7 @@ async function startServer() {
     try {
       const baseUrl = getBaseAppUrl(req);
       const db = getDb();
-      const snap = await getDocs(collection(db, 'products'));
+      const snap = await db.collection('products').get();
       const productsList: any[] = [];
       snap.forEach(docSnap => {
         productsList.push({ id: docSnap.id, ...docSnap.data() });
@@ -746,7 +923,7 @@ async function startServer() {
 
       const cleanPayload = cleanData(newOrder);
       const db = getDb();
-      await setDoc(doc(db, 'orders', orderId), cleanPayload);
+      await db.collection('orders').doc(orderId).set(cleanPayload);
 
       console.log(`[Orders] Order ${orderId} successfully created with total ${serverTotal} TL`);
 
@@ -1075,11 +1252,11 @@ async function startServer() {
           createdAt: Date.now()
         };
 
-        // Write order to Firestore using Firebase Web SDK
+        // Write order to Firestore using Firebase Admin SDK
         try {
           const db = getDb();
           const cleanPayload = cleanData(finalOrder);
-          await setDoc(doc(db, 'orders', orderId), cleanPayload);
+          await db.collection('orders').doc(orderId).set(cleanPayload);
           console.log(`[iyzico] Order ${orderId} successfully saved to Firestore with status '${finalOrder.status}'`);
 
           // Asynchronously send order confirmation email via Resend
@@ -1108,8 +1285,8 @@ async function startServer() {
     try {
       const orderId = req.params.orderId;
       const db = getDb();
-      const orderSnap = await getDoc(doc(db, 'orders', orderId));
-      if (orderSnap.exists()) {
+      const orderSnap = await db.collection('orders').doc(orderId).get();
+      if (orderSnap.exists) {
         return res.json({ found: true, order: orderSnap.data() });
       }
       return res.json({ found: false });

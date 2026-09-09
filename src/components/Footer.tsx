@@ -41,9 +41,6 @@ export const Footer: React.FC<FooterProps> = () => {
                 </>
               )}
             </Link>
-            <p className="text-zinc-400 text-xs font-light leading-relaxed">
-              {settings.footerBrandText || "Işığın heykelsi formlarla buluştuğu bağımsız tasarım ve zanaat atölyesi. Küçük partiler ve el işçiliğiyle üretilen aydınlatma koleksiyonları."}
-            </p>
 
             {/* Official Company Contact Details & Instagram */}
             <div className="space-y-2.5 pt-2 text-[11px] text-zinc-400 font-light border-t border-white/5">
@@ -173,9 +170,6 @@ export const Footer: React.FC<FooterProps> = () => {
         {/* Bottom copyright (No duplicate legal links) */}
         <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-zinc-500 font-light">
           <p>© 2026 {COMPANY.brandName}. Tüm Hakları Saklıdır.</p>
-          <p className="text-zinc-500 text-[10px] tracking-wide">
-            Küçük Partilerde Zanaat Üretimi &amp; Mimari Aydınlatma
-          </p>
         </div>
       </div>
     </footer>

@@ -197,10 +197,10 @@ export const CheckoutPage: React.FC = () => {
   const totalItemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   // Coupon handlers
-  const handleApplyCoupon = (targetEl?: HTMLElement | null) => {
+  const handleApplyCoupon = async (targetEl?: HTMLElement | null) => {
     if (!couponInput.trim()) return;
 
-    const res = applyCoupon(couponInput, currentSubtotal);
+    const res = await applyCoupon(couponInput, currentSubtotal);
     if (res.success) {
       triggerGoldConfetti(targetEl);
       setCouponFeedback({ type: 'success', message: res.message });

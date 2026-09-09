@@ -40,12 +40,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Orders: Allow creating new order (guest checkout or authenticated customer)
-    // Owner of order or Admin can read; Admin can update/delete
+    // Orders: Created exclusively server-side via Firebase Admin SDK (/api/orders/create and iyzico webhook)
+    // Read: Authenticated customers can read their own orders, Admin can read all
+    // Update/Delete: Only Admin
     match /orders/{orderId} {
-      allow create: if request.resource.data.id == orderId 
-                    && (request.resource.data.total is int || request.resource.data.total is float)
-                    && request.resource.data.items is list;
+      allow create: if false;
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();
     }
@@ -56,16 +55,16 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Discount Coupons: Anyone can read to validate coupons during checkout; Only admin can write
+    // Discount Coupons: Validated exclusively server-side via Firebase Admin SDK (/api/coupons/validate)
+    // Read and Write: Strictly restricted to Admin to prevent scraping coupon codes
     match /coupons/{couponId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-    // Pending Orders: Temporary holding during iyzico 3D Secure verification flow
+    // Pending Orders: Managed exclusively server-side via Firebase Admin SDK
+    // Client access is completely locked to protect customer PII and prevent tampering
     match /pending_orders/{pendingId} {
-      allow create, read, delete: if true;
-      allow update: if false;
+      allow read, write: if false;
     }
 
     // Users profiles:

@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Coupon } from '../types';
 import { useAuth } from './AuthContext';
+import { getApiUrl } from '../lib/api';
 import { 
   db, 
   COLLECTIONS, 
   collection, 
-  onSnapshot, 
-  query, 
+  getDocs,
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -15,60 +15,27 @@ import {
   OperationType 
 } from '../lib/firebase';
 
-const STORAGE_KEY = 'lumen_coupons_cache_v2';
+export interface ApplyCouponResult {
+  success: boolean;
+  message: string;
+  coupon?: Coupon;
+  discountAmount?: number;
+}
 
-export const DEFAULT_COUPONS: Coupon[] = [
-  {
-    id: 'coupon-lumen15',
-    code: 'LUMEN15',
-    description: 'Tüm lüks tasarım lambalarda %15 Hoş Geldin İndirimi',
-    discountType: 'percentage',
-    discountValue: 15,
-    minOrderAmount: 200,
-    maxDiscountAmount: 500,
-    active: true,
-    usageCount: 42,
-    usageLimit: 500,
-    createdAt: Date.now() - 86400000 * 30
-  },
-  {
-    id: 'coupon-hosgeldin500',
-    code: 'HOSGELDIN50',
-    description: '300 TL ve üzeri siparişlerde 50 TL Anında Nakit İndirimi',
-    discountType: 'fixed',
-    discountValue: 50,
-    minOrderAmount: 300,
-    active: true,
-    usageCount: 28,
-    usageLimit: 250,
-    createdAt: Date.now() - 86400000 * 15
-  },
-  {
-    id: 'coupon-vip20',
-    code: 'VIP20',
-    description: 'Özel Tasarım & VIP Koleksiyonunda %20 İndirim',
-    discountType: 'percentage',
-    discountValue: 20,
-    minOrderAmount: 750,
-    maxDiscountAmount: 1000,
-    active: true,
-    usageCount: 14,
-    usageLimit: 100,
-    createdAt: Date.now() - 86400000 * 10
-  },
-  {
-    id: 'coupon-yaz2026',
-    code: 'YAZ2026',
-    description: 'Yeni Sezon Bahçe & Tavan Aydınlatmalarında %10 İndirim',
-    discountType: 'percentage',
-    discountValue: 10,
-    minOrderAmount: 150,
-    active: true,
-    usageCount: 65,
-    usageLimit: 1000,
-    createdAt: Date.now() - 86400000 * 5
-  }
-];
+interface CouponContextType {
+  coupons: Coupon[];
+  appliedCoupon: Coupon | null;
+  discountAmount: number;
+  applyCoupon: (code: string, currentSubtotal: number) => Promise<ApplyCouponResult>;
+  removeCoupon: () => void;
+  recalculateDiscount: (currentSubtotal: number) => number;
+  createCoupon: (coupon: Omit<Coupon, 'id' | 'createdAt'>) => Promise<string>;
+  updateCoupon: (id: string, coupon: Partial<Coupon>) => Promise<void>;
+  deleteCoupon: (id: string) => Promise<void>;
+  toggleCouponActive: (id: string, currentStatus: boolean) => Promise<void>;
+  recordCouponUsage: (couponId: string) => Promise<void>;
+  seedDefaultCoupons: () => Promise<void>;
+}
 
 // Helper to strip undefined values so Firestore never rejects payloads
 function cleanObject<T extends Record<string, any>>(obj: T): Record<string, any> {
@@ -82,135 +49,59 @@ function cleanObject<T extends Record<string, any>>(obj: T): Record<string, any>
   return result;
 }
 
-// Load cached coupons from local storage
-function loadCachedCoupons(): Coupon[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.warn('Could not read coupons from localStorage:', e);
-  }
-  return DEFAULT_COUPONS;
-}
-
-// Save coupons to local storage cache
-function saveCachedCoupons(coupons: Coupon[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(coupons));
-  } catch (e) {
-    console.warn('Could not save coupons to localStorage:', e);
-  }
-}
-
-export interface ApplyCouponResult {
-  success: boolean;
-  message: string;
-  coupon?: Coupon;
-  discountAmount?: number;
-}
-
-interface CouponContextType {
-  coupons: Coupon[];
-  appliedCoupon: Coupon | null;
-  discountAmount: number;
-  applyCoupon: (code: string, currentSubtotal: number) => ApplyCouponResult;
-  removeCoupon: () => void;
-  recalculateDiscount: (currentSubtotal: number) => number;
-  createCoupon: (coupon: Omit<Coupon, 'id' | 'createdAt'>) => Promise<string>;
-  updateCoupon: (id: string, coupon: Partial<Coupon>) => Promise<void>;
-  deleteCoupon: (id: string) => Promise<void>;
-  toggleCouponActive: (id: string, currentStatus: boolean) => Promise<void>;
-  recordCouponUsage: (couponId: string) => Promise<void>;
-  seedDefaultCoupons: () => Promise<void>;
-}
-
 const CouponContext = createContext<CouponContextType | undefined>(undefined);
 
 export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAdmin } = useAuth();
-  const [coupons, setCoupons] = useState<Coupon[]>(loadCachedCoupons);
+  // Coupons list is ONLY populated for authenticated administrators in admin panel
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
-  const hasAttemptedAutoSeed = useRef(false);
 
-  // Subscribe to coupons in Firestore with real-time updates (Admin only due to security rules)
+  // When admin logs in, load coupons for administrative dashboard management only
   useEffect(() => {
     if (!isAdmin) {
+      setCoupons([]);
       return;
     }
 
     let isMounted = true;
-    try {
-      const q = query(collection(db, COLLECTIONS.COUPONS));
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          if (!isMounted) return;
+    const fetchAdminCoupons = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, COLLECTIONS.COUPONS));
+        if (!isMounted) return;
 
-          if (!snapshot.empty) {
-            const list: Coupon[] = [];
-            snapshot.forEach((d) => {
-              const data = d.data();
-              list.push({
-                id: d.id,
-                code: data.code || '',
-                description: data.description || '',
-                discountType: data.discountType || 'percentage',
-                discountValue: Number(data.discountValue) || 0,
-                minOrderAmount: data.minOrderAmount ? Number(data.minOrderAmount) : undefined,
-                maxDiscountAmount: data.maxDiscountAmount ? Number(data.maxDiscountAmount) : undefined,
-                usageCount: Number(data.usageCount) || 0,
-                usageLimit: data.usageLimit ? Number(data.usageLimit) : undefined,
-                expiresAt: data.expiresAt ? Number(data.expiresAt) : undefined,
-                active: data.active !== undefined ? Boolean(data.active) : true,
-                createdAt: Number(data.createdAt) || Date.now()
-              } as Coupon);
-            });
-
-            const sorted = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            setCoupons(sorted);
-            saveCachedCoupons(sorted);
-          } else {
-            // If Firestore is empty and hasn't been seeded yet, auto-seed default coupons
-            if (!hasAttemptedAutoSeed.current) {
-              hasAttemptedAutoSeed.current = true;
-              seedDefaultCoupons().catch((err) => {
-                console.warn('Auto-seed default coupons error:', err);
-              });
-            } else {
-              setCoupons(prev => {
-                const initial = prev.length > 0 ? prev : DEFAULT_COUPONS;
-                saveCachedCoupons(initial);
-                return initial;
-              });
-            }
-          }
-        },
-        (error) => {
-          console.warn('Coupons onSnapshot warning (using cached fallback):', error);
-          setCoupons(prev => {
-            const fallback = prev.length > 0 ? prev : loadCachedCoupons();
-            saveCachedCoupons(fallback);
-            return fallback;
+        if (!snapshot.empty) {
+          const list: Coupon[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data();
+            list.push({
+              id: d.id,
+              code: data.code || '',
+              description: data.description || '',
+              discountType: data.discountType || 'percentage',
+              discountValue: Number(data.discountValue) || 0,
+              minOrderAmount: data.minOrderAmount ? Number(data.minOrderAmount) : undefined,
+              maxDiscountAmount: data.maxDiscountAmount ? Number(data.maxDiscountAmount) : undefined,
+              usageCount: Number(data.usageCount) || 0,
+              usageLimit: data.usageLimit ? Number(data.usageLimit) : undefined,
+              expiresAt: data.expiresAt ? Number(data.expiresAt) : undefined,
+              active: data.active !== undefined ? Boolean(data.active) : true,
+              createdAt: Number(data.createdAt) || Date.now()
+            } as Coupon);
           });
+          const sorted = list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          setCoupons(sorted);
         }
-      );
+      } catch (err) {
+        console.warn('[CouponContext] Admin coupons fetch warning:', err);
+      }
+    };
 
-      return () => {
-        isMounted = false;
-        unsubscribe();
-      };
-    } catch (err) {
-      console.warn('Coupon subscription error:', err);
-      const fallback = loadCachedCoupons();
-      setCoupons(fallback);
-      saveCachedCoupons(fallback);
-    }
+    fetchAdminCoupons();
+    return () => {
+      isMounted = false;
+    };
   }, [isAdmin]);
 
   const calculateDiscount = (coupon: Coupon, currentSubtotal: number): number => {
@@ -234,90 +125,60 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return 0;
     }
 
-    // Check if the current applied coupon still exists in latest active coupons
-    const freshCoupon = coupons.find(c => c.code.toUpperCase() === appliedCoupon.code.toUpperCase());
-    const couponToUse = freshCoupon || appliedCoupon;
-
-    if (!couponToUse.active) {
+    if (appliedCoupon.minOrderAmount && currentSubtotal < appliedCoupon.minOrderAmount) {
       setAppliedCoupon(null);
       setDiscountAmount(0);
       return 0;
     }
 
-    if (couponToUse.minOrderAmount && currentSubtotal < couponToUse.minOrderAmount) {
-      // Below min threshold
-      setAppliedCoupon(null);
-      setDiscountAmount(0);
-      return 0;
-    }
-
-    const calculated = calculateDiscount(couponToUse, currentSubtotal);
+    const calculated = calculateDiscount(appliedCoupon, currentSubtotal);
     setDiscountAmount(calculated);
     return calculated;
   };
 
-  const applyCoupon = (code: string, currentSubtotal: number): ApplyCouponResult => {
+  // Securely validate coupon against the backend endpoint (IP rate limited, Admin SDK verified)
+  const applyCoupon = async (code: string, currentSubtotal: number): Promise<ApplyCouponResult> => {
     const cleanCode = code.trim().toUpperCase();
     if (!cleanCode) {
       return { success: false, message: 'Lütfen geçerli bir indirim kodu girin.' };
     }
 
-    // Find coupon in state or fallback list
-    const found = coupons.find(
-      (c) => c.code.trim().toUpperCase() === cleanCode
-    ) || DEFAULT_COUPONS.find(
-      (c) => c.code.trim().toUpperCase() === cleanCode
-    );
+    try {
+      const response = await fetch(getApiUrl('/api/coupons/validate'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: cleanCode,
+          subtotal: currentSubtotal
+        })
+      });
 
-    if (!found) {
-      return { 
-        success: false, 
-        message: `"${cleanCode}" geçerli bir indirim kodu değil. Lütfen kontrol ediniz.` 
+      const data = await response.json();
+
+      if (data.success && data.coupon) {
+        setAppliedCoupon(data.coupon);
+        setDiscountAmount(data.discountAmount || 0);
+        return {
+          success: true,
+          message: data.message || `"${cleanCode}" kodu başarıyla uygulandı.`,
+          coupon: data.coupon,
+          discountAmount: data.discountAmount || 0
+        };
+      }
+
+      return {
+        success: false,
+        message: data.message || 'İndirim kodu geçersiz veya süresi dolmuş.'
+      };
+    } catch (networkErr) {
+      console.error('[applyCoupon] Validation request error:', networkErr);
+      return {
+        success: false,
+        message: 'İndirim kodu doğrulanırken sunucuya ulaşılamadı. Lütfen tekrar deneyiniz.'
       };
     }
-
-    if (!found.active) {
-      return { 
-        success: false, 
-        message: `"${cleanCode}" indirim kodunun süresi dolmuş veya kampanya pasif hale getirilmiştir.` 
-      };
-    }
-
-    if (found.expiresAt && found.expiresAt < Date.now()) {
-      return { 
-        success: false, 
-        message: `"${cleanCode}" indirim kodunun geçerlilik tarihi sona ermiştir.` 
-      };
-    }
-
-    if (found.usageLimit && (found.usageCount || 0) >= found.usageLimit) {
-      return { 
-        success: false, 
-        message: `"${cleanCode}" indirim kodunun maksimum kullanım limitine (${found.usageLimit}) ulaşılmıştır.` 
-      };
-    }
-
-    if (found.minOrderAmount && currentSubtotal < found.minOrderAmount) {
-      return { 
-        success: false, 
-        message: `Bu indirim kodu en az ${found.minOrderAmount.toLocaleString('tr-TR')} TL tutarındaki sepetlerde geçerlidir.` 
-      };
-    }
-
-    const calculated = calculateDiscount(found, currentSubtotal);
-    setAppliedCoupon(found);
-    setDiscountAmount(calculated);
-
-    const desc = found.discountType === 'percentage' 
-      ? `%${found.discountValue} İndirim` 
-      : `${found.discountValue.toLocaleString('tr-TR')} TL İndirim`;
-
-    return { 
-      success: true, 
-      message: `Tebrikler! "${found.code}" kodu başarıyla uygulandı (${desc}).`,
-      coupon: found,
-      discountAmount: calculated
-    };
   };
 
   const removeCoupon = () => {
@@ -350,26 +211,17 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         ...rawPayload
       };
       
-      setCoupons(prev => {
-        const next = [newCoupon, ...prev.filter(c => c.id !== docRef.id)];
-        saveCachedCoupons(next);
-        return next;
-      });
-
+      setCoupons(prev => [newCoupon, ...prev.filter(c => c.id !== docRef.id)]);
       return docRef.id;
     } catch (err) {
-      console.warn('Firestore addDoc error for coupon, persisting to local cache:', err);
+      console.warn('Firestore addDoc error for coupon:', err);
       const localId = 'coupon-' + Date.now();
       const newCoupon: Coupon = {
         id: localId,
         ...rawPayload
       };
       
-      setCoupons(prev => {
-        const next = [newCoupon, ...prev];
-        saveCachedCoupons(next);
-        return next;
-      });
+      setCoupons(prev => [newCoupon, ...prev]);
 
       try {
         handleFirestoreError(err, OperationType.CREATE, COLLECTIONS.COUPONS);
@@ -406,11 +258,7 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const cleanUpdates = cleanObject(updates);
 
     // Update local state immediately
-    setCoupons(prev => {
-      const next = prev.map(c => c.id === id ? { ...c, ...couponData } : c);
-      saveCachedCoupons(next);
-      return next;
-    });
+    setCoupons(prev => prev.map(c => c.id === id ? { ...c, ...couponData } : c));
 
     try {
       const docRef = doc(db, COLLECTIONS.COUPONS, id);
@@ -422,11 +270,7 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteCoupon = async (id: string): Promise<void> => {
     // Update local state immediately
-    setCoupons(prev => {
-      const next = prev.filter(c => c.id !== id);
-      saveCachedCoupons(next);
-      return next;
-    });
+    setCoupons(prev => prev.filter(c => c.id !== id));
 
     try {
       const docRef = doc(db, COLLECTIONS.COUPONS, id);
@@ -449,16 +293,41 @@ export const CouponProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const seedDefaultCoupons = async (): Promise<void> => {
-    for (const c of DEFAULT_COUPONS) {
+    const defaultTemplates: Array<Omit<Coupon, 'id'>> = [
+      {
+        code: 'LUMEN15',
+        description: 'Tüm lüks tasarım lambalarda %15 Hoş Geldin İndirimi',
+        discountType: 'percentage',
+        discountValue: 15,
+        minOrderAmount: 200,
+        maxDiscountAmount: 500,
+        active: true,
+        usageCount: 0,
+        usageLimit: 500,
+        createdAt: Date.now()
+      },
+      {
+        code: 'HOSGELDIN50',
+        description: '300 TL ve üzeri siparişlerde 50 TL Anında Nakit İndirimi',
+        discountType: 'fixed',
+        discountValue: 50,
+        minOrderAmount: 300,
+        active: true,
+        usageCount: 0,
+        usageLimit: 250,
+        createdAt: Date.now()
+      }
+    ];
+
+    for (const data of defaultTemplates) {
       try {
-        const { id, ...data } = c;
         const clean = cleanObject({
           ...data,
           createdAt: Date.now()
         });
         await addDoc(collection(db, COLLECTIONS.COUPONS), clean);
       } catch (e) {
-        console.warn('Seed error for coupon:', c.code, e);
+        console.warn('Seed error for coupon:', data.code, e);
       }
     }
   };

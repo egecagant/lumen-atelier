@@ -109,10 +109,10 @@ export const GuestCheckoutPage: React.FC = () => {
   const paymentDiscount = paymentMethod === 'bank_transfer' ? Math.round((currentSubtotal - discountAmount) * 0.03) : 0;
   const finalPayableTotal = Math.max(0, currentSubtotal - discountAmount - paymentDiscount + shippingCost);
 
-  const handleApplyCoupon = (targetEl?: HTMLElement | null) => {
+  const handleApplyCoupon = async (targetEl?: HTMLElement | null) => {
     if (!couponInput.trim()) return;
 
-    const res = applyCoupon(couponInput, currentSubtotal);
+    const res = await applyCoupon(couponInput, currentSubtotal);
     if (res.success) {
       triggerGoldConfetti(targetEl);
       setCouponFeedback({ type: 'success', message: res.message });

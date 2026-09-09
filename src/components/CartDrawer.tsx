@@ -55,10 +55,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const finalTotal = Math.max(0, subtotal - discountAmount + shipping);
 
-  const handleApplyCoupon = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleApplyCoupon = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!couponInput.trim()) return;
-    const res = applyCoupon(couponInput, subtotal);
+    const res = await applyCoupon(couponInput, subtotal);
     setCouponFeedback(res.message);
     if (res.success) {
       const submitBtn = e.currentTarget.querySelector('button[type="submit"]') as HTMLElement | null;
