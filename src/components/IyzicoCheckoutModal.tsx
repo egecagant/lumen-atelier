@@ -484,7 +484,7 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
                 </div>
               )}
               <div className="text-xs text-zinc-400 flex justify-between">
-                <span>Sigortalı Ahşap Sandık Kargo:</span>
+                <span>Hızlı Kargo:</span>
                 <span>{shipping === 0 ? <span className="text-emerald-400 font-semibold">ÜCRETSİZ</span> : formatCurrency(shipping)}</span>
               </div>
               <div className="text-sm font-bold text-white flex justify-between pt-2 border-t border-white/10">
@@ -499,19 +499,20 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
                 id="submit-iyzico-checkout-btn"
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-[0.2em] rounded-xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 cursor-pointer shadow-lg active:scale-[0.99]"
+                className="w-full h-12 bg-[#C5A059] hover:bg-[#d6b26b] text-black rounded-xl transition-all flex items-center justify-center disabled:opacity-60 cursor-pointer shadow-sm active:scale-[0.99] border border-[#C5A059]"
+                title="iyzico ile Güvenli Öde"
               >
                 {loading ? (
-                  <>
+                  <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-black" />
-                    <span>iyzico Güvenli Ödeme Sayfasına Yönlendiriliyorsunuz...</span>
-                  </>
+                    <span className="text-xs font-semibold text-black">iyzico Güvenli Ödeme Sayfasına Yönlendiriliyorsunuz...</span>
+                  </div>
                 ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    <span>{formatCurrency(total)} • iyzico ile Güvenli Öde</span>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                  </>
+                  <img 
+                    src="/payment/iyzico-ile-ode-dark.svg" 
+                    alt="iyzico ile Öde" 
+                    className="h-5 sm:h-5.5 w-auto object-contain" 
+                  />
                 )}
               </button>
 

@@ -84,14 +84,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onExitAdmin}
-              className="group text-left flex flex-col focus:outline-none"
+              className="group text-left flex items-center focus:outline-none"
               title="Vitrini Görüntüle"
             >
-              <span className="font-serif-luxury text-xl sm:text-2xl tracking-[0.25em] font-semibold text-white group-hover:text-[#C5A059] transition-colors uppercase">
+              <span className="font-serif-luxury text-2xl sm:text-[26px] tracking-[0.24em] font-semibold text-white group-hover:text-zinc-200 transition-colors uppercase">
                 {settings.brandName || 'LUMEN'}
-              </span>
-              <span className="text-[9px] tracking-[0.4em] text-[#C5A059] uppercase -mt-1 font-light">
-                {settings.brandTagline || "ATELIER D'ART"}
               </span>
             </button>
             <span className="text-[10px] bg-[#C5A059] text-black px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
@@ -99,9 +96,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-400 border-l border-white/10 pl-4">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059]" />
-            <span>{user?.email || 'Yönetici Modu'}</span>
+          <div className="hidden md:flex items-center gap-3 text-xs text-zinc-400 border-l border-white/10 pl-4">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059]" />
+              <span>{user?.email || 'Yönetici Modu'}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+              <img src="/payment/iyzico.svg" alt="iyzico" className="h-3 w-auto object-contain opacity-90" />
+              <img src="/payment/visa.svg" alt="Visa" className="h-3 w-auto object-contain opacity-75" />
+              <img src="/payment/mastercard.svg" alt="Mastercard" className="h-3 w-auto object-contain opacity-75" />
+            </div>
           </div>
         </div>
 

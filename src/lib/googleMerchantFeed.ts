@@ -84,7 +84,7 @@ ${additionalImagesXml ? additionalImagesXml + '\n' : ''}      <g:condition>new</
       <g:material>${material}</g:material>
       <g:shipping>
         <g:country>TR</g:country>
-        <g:service>Sigortalı Ahşap Sandık Özel Teslimat</g:service>
+        <g:service>Hızlı ve Güvenli Teslimat</g:service>
         <g:price>0.00 TRY</g:price>
       </g:shipping>
       <g:custom_label_0>El Yapımı Lüks Tasarım</g:custom_label_0>

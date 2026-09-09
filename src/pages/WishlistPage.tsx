@@ -138,10 +138,10 @@ export const WishlistPage: React.FC<WishlistPageProps> = ({
                 <button
                   onClick={handleAddAllToCart}
                   disabled={allAddedAnimation}
-                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 shadow-lg cursor-pointer ${
+                  className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 shadow-sm cursor-pointer ${
                     allAddedAnimation 
-                      ? 'bg-emerald-500 text-black shadow-emerald-500/20' 
-                      : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-[#C5A059]/20'
+                      ? 'bg-emerald-500 text-black' 
+                      : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black border border-[#C5A059]'
                   }`}
                 >
                   {allAddedAnimation ? (

@@ -369,7 +369,7 @@ export const UserManager: React.FC = () => {
     <div className="space-y-6">
       {/* Notifications */}
       {successMessage && (
-        <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-lg shadow-emerald-950/30 animate-in fade-in duration-200">
+        <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-sm animate-in fade-in duration-200">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
             <span className="text-sm font-medium">{successMessage}</span>
@@ -384,7 +384,7 @@ export const UserManager: React.FC = () => {
       )}
 
       {errorMessage && (
-        <div className="p-4 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 flex items-center justify-between shadow-lg shadow-rose-950/30 animate-in fade-in duration-200">
+        <div className="p-4 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 flex items-center justify-between shadow-sm animate-in fade-in duration-200">
           <div className="flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
             <span className="text-sm font-medium">{errorMessage}</span>
@@ -965,7 +965,7 @@ export const UserManager: React.FC = () => {
       {isDeleteModalOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
           <div className="glass-panel w-full max-w-md rounded-3xl border border-rose-500/30 p-6 sm:p-8 bg-[#0D0D0D] space-y-6 shadow-2xl text-center">
-            <div className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center bg-rose-950/40 border border-rose-500/40 text-rose-400 shadow-lg shadow-rose-950/40">
+            <div className="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center bg-rose-950/40 border border-rose-500/40 text-rose-400 shadow-sm">
               <Trash2 className="w-8 h-8" />
             </div>
 
@@ -993,7 +993,7 @@ export const UserManager: React.FC = () => {
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleDeleteUser}
-                className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-rose-900/40 disabled:opacity-50"
+                className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm disabled:opacity-50"
               >
                 {isSubmitting ? 'Siliniyor...' : 'Evet, Kullanıcıyı Sil'}
               </button>

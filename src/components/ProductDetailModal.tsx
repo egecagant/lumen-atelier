@@ -392,7 +392,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             {/* Delivery banner */}
             <div className="p-3.5 rounded-xl glass-panel flex items-center gap-3 text-xs text-zinc-300">
               <Truck className="w-4 h-4 text-[#C5A059] flex-shrink-0" />
-              <span>{settings.productDetailShippingBanner || 'Özel ahşap sandıklı korumalı paketleme & ücretsiz sigortalı teslimat.'}</span>
+              <span>{settings.productDetailShippingBanner || 'Yurtiçi Kargo ile hızlı teslimat.'}</span>
             </div>
           </div>
 
@@ -472,7 +472,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 className="w-full py-3 glass-panel hover:bg-white/10 text-[#C5A059] border border-[#C5A059]/40 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{isPreorder ? 'Ön Sipariş ile Hemen Al' : (settings.productDetailInstantCheckoutText || 'Hemen Al & 3D Secure ile Güvenli Öde')}</span>
+                <span>{isPreorder ? 'Ön Sipariş ile Hemen Al' : (settings.productDetailInstantCheckoutText || 'Hemen Satın Al')}</span>
               </button>
             )}
 

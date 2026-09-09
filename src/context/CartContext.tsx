@@ -75,7 +75,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return [...prev, { product, quantity, selectedColor }];
     });
-    setIsCartOpen(true);
   };
 
   const removeFromCart = (productId: string, selectedColor?: string) => {

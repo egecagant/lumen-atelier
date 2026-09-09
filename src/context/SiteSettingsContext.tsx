@@ -120,8 +120,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   navContactText: 'Özel Tasarım & İletişim',
   searchModalPlaceholder: 'Lamba adı, pirinç, mermer, kategori ara...',
   
-  announcementText: '✨ Tüm Türkiye’ye Ücretsiz Sigortalı Kargo | Özel Tasarım Talepleri İçin İletişime Geçin',
-  announcementActive: true,
+  announcementText: '✨ Tüm Türkiye’ye Yurtiçi Kargo ile Hızlı Teslimat | Özel Tasarım Talepleri İçin İletişime Geçin',
+  announcementActive: false,
   announcementBgColor: '#121215',
   announcementTextColor: '#C5A059',
   announcementAnimation: 'none',
@@ -129,8 +129,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   savedAnnouncementTemplates: [
     {
       id: 'tpl-1',
-      name: 'Ücretsiz Kargo & Özel Tasarım Destek',
-      text: '✨ Tüm Türkiye’ye Ücretsiz Sigortalı Kargo | Özel Tasarım Talepleri İçin İletişime Geçin',
+      name: 'Hızlı Teslimat & Özel Tasarım Destek',
+      text: '✨ Tüm Türkiye’ye Yurtiçi Kargo ile Hızlı Teslimat | Özel Tasarım Talepleri İçin İletişime Geçin',
       bgColor: '#121215',
       textColor: '#C5A059',
       animation: 'none',
@@ -168,9 +168,9 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   productDetailLightSpecsLabel: 'Işık & Duy',
   productDetailWarrantyTitle: 'Garanti & Kalite',
   productDetailWarrantyText: '2 Yıl Atölye Garantisi',
-  productDetailShippingBanner: 'Özel ahşap sandıklı korumalı paketleme & ücretsiz sigortalı teslimat.',
+  productDetailShippingBanner: 'Yurtiçi Kargo ile hızlı teslimat.',
   productDetailAddToCartText: 'Sepete Ekle',
-  productDetailInstantCheckoutText: 'Hemen Al & 3D Secure ile Güvenli Öde',
+  productDetailInstantCheckoutText: 'Hemen Satın Al',
 
   cartTitle: 'Alışveriş Sepeti',
   cartEmptyTitle: 'Sepetiniz Boş',
@@ -187,7 +187,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   contactAddressText: 'Yenimahalle Mah. Teyyareci Sadık Sok. No:50 A, 34142 Bakırköy / İstanbul',
   contactEmailTitle: 'Özel Tasarım & Sipariş İletişimi',
   contactEmailText: 'hello@lumenlatelier.com',
-  contactPhoneTitle: 'Müşteri Hattı & WhatsApp',
+  contactPhoneTitle: 'Müşteri Hattı',
   contactPhoneText: '+90 537 267 53 86',
   contactWorkingHoursTitle: '',
   contactWorkingHoursText: '',
@@ -264,8 +264,14 @@ function sanitizeSettings(data: Partial<SiteSettings>): SiteSettings {
   if (!merged.contactPhoneText || merged.contactPhoneText.includes('840 20 25') || merged.contactPhoneText.includes('000 00 00') || merged.contactPhoneText.includes('212')) {
     merged.contactPhoneText = '+90 537 267 53 86';
   }
-  if (!merged.contactPhoneTitle) {
-    merged.contactPhoneTitle = 'Müşteri Hattı & WhatsApp';
+  if (!merged.contactPhoneTitle || merged.contactPhoneTitle.includes('& WhatsApp')) {
+    merged.contactPhoneTitle = 'Müşteri Hattı';
+  }
+  if (!merged.announcementText || merged.announcementText.includes('Ücretsiz Sigortalı Kargo') || merged.announcementText.includes('Ücretsiz Kargo')) {
+    merged.announcementText = '✨ Tüm Türkiye’ye Yurtiçi Kargo ile Hızlı Teslimat | Özel Tasarım Talepleri İçin İletişime Geçin';
+  }
+  if (!merged.productDetailShippingBanner || merged.productDetailShippingBanner.includes('ahşap') || merged.productDetailShippingBanner.includes('koruyucu') || merged.productDetailShippingBanner.includes('ücretsiz kargo') || merged.productDetailShippingBanner.includes('ücretsiz teslimat')) {
+    merged.productDetailShippingBanner = 'Yurtiçi Kargo ile hızlı teslimat.';
   }
   if (!merged.footerCopyright || merged.footerCopyright.includes("L'atelier") || merged.footerCopyright.includes("Ege Çağan Tokgöz")) {
     merged.footerCopyright = '© 2026 LUMEN ATELIER. Tüm Hakları Saklıdır.';

@@ -177,10 +177,10 @@ export const AnnouncementManager: React.FC = () => {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg ${
+          className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm ${
             saveSuccess
               ? 'bg-emerald-500 text-white'
-              : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-[#C5A059]/20'
+              : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black border border-[#C5A059]'
           }`}
         >
           {isSaving ? (
@@ -256,7 +256,7 @@ export const AnnouncementManager: React.FC = () => {
               value={text}
               onChange={(e) => setText(e.target.value)}
               className="w-full bg-black/60 border border-white/15 rounded-xl p-4 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors leading-relaxed"
-              placeholder="✨ Tüm Türkiye’ye Ücretsiz Sigortalı Kargo | Özel Proje Talepleri İçin İletişime Geçin"
+              placeholder="✨ Tüm Türkiye’ye Yurtiçi Kargo ile Hızlı Teslimat | Özel Proje Talepleri İçin İletişime Geçin"
             />
           </div>
 
@@ -584,7 +584,7 @@ export const AnnouncementManager: React.FC = () => {
             className={`px-8 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg ${
               saveSuccess
                 ? 'bg-emerald-500 text-white'
-                : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-[#C5A059]/20'
+                : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black border border-[#C5A059]'
             }`}
           >
             {isSaving ? (

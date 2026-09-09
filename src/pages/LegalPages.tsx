@@ -139,7 +139,7 @@ export const AboutPage: React.FC = () => {
           <strong>LUMEN ATELIER</strong>, heykelsi formlarla sıcak aydınlatma estetiğini buluşturan bağımsız bir tasarım ve zanaat atölyesidir. Seri imalatın tekdüzeliğine karşı, her bir aydınlatma objesini sınırlı adetlerde ve küçük partiler (small-batch) hâlinde üretiriz.
         </p>
         <p>
-          Tasarım stüdyomuzda Floransa zanaat geleneğinin heykelsi kıvrımları ile İstanbul'un zengin malzeme kültürünü harmanlıyoruz. Seçkin doğal mineraller, fırınlanmış seramik kompozitler ve pirinç detaylar, usta ellerde ışığın mekânla kurduğu şiirsel bir diyaloğa dönüşür.
+          Tasarım stüdyomuzda heykelsi kıvrımlar ile zengin malzeme kültürünü harmanlıyoruz. Seçkin doğal mineraller, fırınlanmış seramik kompozitler ve pirinç detaylar, atölyemizde özenli el yapımı işçilikle ışığın mekânla kurduğu şiirsel bir diyaloğa dönüşür.
         </p>
         <p>
           Ayrıca mimari projeler, oteller, konutlar ve koleksiyonerler için mekâna özgü özel ölçü ve formlarda <strong>kişiye özel aydınlatma tasarımı</strong> (bespoke) hizmeti sunmaktayız.
@@ -245,7 +245,7 @@ export const DistanceSalesContractPage: React.FC = () => {
             3.3. Taksitli ödemelerde Alıcı'nın bankası ile yaptığı sözleşme koşulları geçerlidir. Bankanın kampanya veya vade farkı uygulamaları Alıcı'nın kredi kartı ekstresine ayrıca yansıyabilir.
           </p>
           <p>
-            3.4. Ödemeler TCMB lisanslı ve uluslararası PCI-DSS Seviye 1 güvenlik sertifikasyonuna sahip <strong>iyzico</strong> güvenli ödeme altyapısı (3D Secure), banka havalesi/EFT veya onaylanan siparişlerde kapıda ödeme yöntemi ile tahsil edilir.
+            3.4. Ödemeler TCMB lisanslı ve uluslararası PCI-DSS Seviye 1 güvenlik sertifikasyonuna sahip <strong>iyzico</strong> güvenli ödeme altyapısı (3D Secure) veya banka havalesi/EFT yöntemi ile tahsil edilir.
           </p>
         </section>
 
@@ -255,7 +255,7 @@ export const DistanceSalesContractPage: React.FC = () => {
             Madde 4 — Teslimat Şartları ve İfa Süresi
           </h2>
           <p>
-            4.1. Ürünler, sipariş onayından itibaren heykelsi el işçiliği ve korumalı ahşap sandıklama süreci göz önünde bulundurularak <strong>{COMPANY.deliveryDays}</strong> içerisinde anlaşmalı kargo şirketi olan <strong>{COMPANY.carrier}</strong>'ya teslim edilir.
+            4.1. Ürünler, sipariş onayından itibaren heykelsi el işçiliği süreci göz önünde bulundurularak <strong>{COMPANY.deliveryDays}</strong> içerisinde anlaşmalı kargo şirketi olan <strong>{COMPANY.carrier}</strong>'ya hızlı teslimat için teslim edilir.
           </p>
           <p>
             4.2. Yasal azami teslim süresi mevzuat uyarınca 30 (otuz) gündür.
@@ -418,10 +418,10 @@ export const PreliminaryInfoFormPage: React.FC = () => {
           </div>
           <div className="p-4 text-xs sm:text-sm space-y-2.5">
             <p>
-              • <strong>Ödeme Yöntemleri:</strong> Kredi kartı / banka kartı (iyzico PCI-DSS Seviye 1 ve 3D Secure), Banka Havalesi / EFT ve Kapıda VIP Ödeme.
+              • <strong>Ödeme Yöntemleri:</strong> Kredi kartı / banka kartı (iyzico PCI-DSS Seviye 1 ve 3D Secure) ve Banka Havalesi / EFT.
             </p>
             <p>
-              • <strong>Teslimat Taşıyıcısı:</strong> Siparişler özel ahşap korumalı ambalajında <strong>{COMPANY.carrier}</strong> güvencesiyle sevk edilir.
+              • <strong>Teslimat Taşıyıcısı:</strong> Siparişler hızlı kargo ile <strong>{COMPANY.carrier}</strong> güvencesiyle sevk edilir.
             </p>
             <p>
               • <strong>Hazırlık ve Teslim Süresi:</strong> Sipariş tarihinden itibaren <strong>{COMPANY.deliveryDays}</strong> hazırlık süresi bulunur. Yasal azami teslim süresi 30 gündür.
@@ -553,7 +553,7 @@ Tarih: ${new Date().toLocaleDateString('tr-TR')}
             İade Öncesi Hatırlatmalar
           </h3>
           <ul className="list-disc list-inside space-y-1.5 pl-1">
-            <li>Ürünlerin orijinal ahşap sandığı ve darbe emici süngerleri ile birlikte eksiksiz paketlenmesi gerekir.</li>
+            <li>Ürünlerin orijinal kutu ve aparatları ile birlikte eksiksiz paketlenmesi gerekir.</li>
             <li>İadeler anlaşmalı kargo şirketimiz <strong>{COMPANY.carrier}</strong> ile yapılmalıdır. İade kargo ücreti alıcıya aittir.</li>
             <li>Kişiye özel sipariş edilen ve özel ölçülendirilen aydınlatmalarda Yönetmelik gereği cayma hakkı geçerli değildir.</li>
           </ul>
@@ -578,14 +578,14 @@ export const DeliveryAndReturnPage: React.FC = () => {
             1. Gönderim ve Teslimat Aşamaları
           </h2>
           <p>
-            Her {COMPANY.brandName} aydınlatması el işçiliğiyle hazırlandığından, siparişinizin onaylanmasının ardından titiz bir kalite kontrol ve koruyucu paketleme sürecinden geçer.
+            Her {COMPANY.brandName} aydınlatması el işçiliğiyle hazırlandığından, siparişinizin onaylanmasının ardından titiz bir kalite kontrol ve hazırlık sürecinden geçer.
           </p>
           <ul className="list-disc list-inside space-y-2 text-zinc-600 pl-1">
             <li>
               <strong>Kargo Şirketi:</strong> Tüm gönderilerimiz Türkiye genelinde anlaşmalı olduğumuz <strong>{COMPANY.carrier}</strong> güvencesiyle sigortalı olarak sevk edilir.
             </li>
             <li>
-              <strong>Hazırlık Süresi:</strong> Atölye hazırlık ve korumalı sandıklama süremiz <strong>{COMPANY.deliveryDays}</strong>dir.
+              <strong>Hazırlık Süresi:</strong> Atölye hazırlık süremiz <strong>{COMPANY.deliveryDays}</strong>dir. Paketiniz tamamlandığında hızlı kargo ile sevk edilir.
             </li>
             <li>
               <strong>Kargo Takibi:</strong> Siparişiniz kargoya verildiği an, sisteme kayıtlı e-posta adresinize ve telefonunuza Yurtiçi Kargo takip numaranız otomatik olarak iletilir.
@@ -600,7 +600,7 @@ export const DeliveryAndReturnPage: React.FC = () => {
             <span>Kritik Uyarı: Hasarlı Paket Kontrolü ve Tutanak</span>
           </h3>
           <p className="text-xs sm:text-sm leading-relaxed">
-            Heykelsi lambalarımız yüksek mukavemetli ahşap korumalı sandıklarda paketlenir. Lütfen kargo teslimatı anında paketi kuryenin yanında kontrol ediniz:
+            Heykelsi lambalarımız özenle paketlenerek hızlı kargo ile sevk edilir. Lütfen kargo teslimatı anında paketi kuryenin yanında kontrol ediniz:
           </p>
           <ul className="list-disc list-inside text-xs sm:text-sm space-y-1 pl-1">
             <li>Kolide ezilme, delinme, ıslanma veya kırık şüphesi varsa <strong>paketi teslim almayınız</strong>.</li>
@@ -618,7 +618,7 @@ export const DeliveryAndReturnPage: React.FC = () => {
             Müşteri memnuniyeti ilkemiz ve yasal mevzuat uyarınca, teslim aldığınız standart koleksiyon parçalarını <strong>14 gün içinde</strong> iade edebilirsiniz.
           </p>
           <div className="bg-white p-4 rounded-xl border border-zinc-200 space-y-2 text-xs sm:text-sm">
-            <div><strong>İade Şartları:</strong> Ürünün kullanılmamış, demonte edilmemiş, elektrik aksamına müdahale edilmemiş ve tüm orijinal kutu/sandık aparatlarıyla eksiksiz olması şarttır.</div>
+            <div><strong>İade Şartları:</strong> Ürünün kullanılmamış, demonte edilmemiş, elektrik aksamına müdahale edilmemiş ve tüm orijinal kutu/ambalaj aparatlarıyla eksiksiz olması şarttır.</div>
             <div><strong>İade Kargo Masrafı:</strong> İade işlemlerinde <strong>iade kargo ücreti alıcıya aittir</strong>. Ürünler mutlaka {COMPANY.carrier} aracılığıyla gönderilmelidir.</div>
             <div><strong>Geri Ödeme:</strong> İade ürün atölyemize ulaşıp kontrolleri yapıldıktan sonra <strong>14 gün içinde</strong> ödemenin yapıldığı kredi kartına veya banka hesabına eksiksiz iade edilir. Bankaların ekstreye yansıtma süresi 2-10 iş günü sürebilmektedir.</div>
           </div>
@@ -965,6 +965,15 @@ export const CookiePolicyPage: React.FC = () => {
           <p className="text-xs sm:text-sm">
             Dilediğiniz zaman tarayıcınızın ayarlarından (Chrome, Safari, Firefox vb.) site verilerini ve yerel depolamayı silebilirsiniz. Ancak zorunlu teknik veriler engellendiğinde, sepete ürün ekleme ve üye girişi gibi temel alışveriş fonksiyonları çalışamayacaktır.
           </p>
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-consent'))}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium transition-colors cursor-pointer"
+            >
+              Çerez Tercihlerini Yönet
+            </button>
+          </div>
         </section>
 
         <section className="space-y-3">

@@ -54,13 +54,13 @@ export const MaintenanceScreen: React.FC<MaintenanceScreenProps> = ({ onOpenAuth
           </a>
 
           <a
-            href="https://instagram.com/lumenlatelier"
+            href="https://www.instagram.com/lumenn.atelier/"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs sm:text-sm text-zinc-200 hover:text-white transition-all group"
           >
             <Instagram className="w-4 h-4 text-[#C5A059]" />
-            <span className="tracking-wide">@lumenlatelier</span>
+            <span className="tracking-wide">@lumenn.atelier</span>
           </a>
         </div>
       </div>

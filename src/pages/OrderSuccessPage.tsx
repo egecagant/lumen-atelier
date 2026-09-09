@@ -168,7 +168,7 @@ export const OrderSuccessPage: React.FC = () => {
               Siparişiniz Başarıyla Alındı
             </h1>
             <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-              Ödemeniz güvenle tahsil edilmiştir. Lüks aydınlatma tasarımınız özel ahşap sandık ambalajıyla imalathanemizde hazırlanacaktır.
+              Ödemeniz güvenle tahsil edilmiştir. Lüks aydınlatma tasarımınız özenle hazırlanarak hızlı kargo ile adresinize sevk edilecektir.
             </p>
           </div>
         </div>

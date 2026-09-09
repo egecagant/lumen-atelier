@@ -500,7 +500,7 @@ export const ContentEditor: React.FC = () => {
                 value={formData.announcementText}
                 onChange={(e) => handleChange('announcementText', e.target.value)}
                 className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors"
-                placeholder="✨ Tüm Türkiye’ye Ücretsiz Sigortalı Kargo | Özel Proje Talepleri İçin İletişime Geçin"
+                placeholder="✨ Tüm Türkiye’ye Yurtiçi Kargo ile Hızlı Teslimat | Özel Proje Talepleri İçin İletişime Geçin"
               />
             </div>
 
@@ -1011,7 +1011,7 @@ export const ContentEditor: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.productDetailShippingBanner || 'Özel ahşap sandıklı korumalı paketleme & ücretsiz sigortalı teslimat.'}
+                  value={formData.productDetailShippingBanner || 'Yurtiçi Kargo ile hızlı teslimat.'}
                   onChange={(e) => handleChange('productDetailShippingBanner', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
                 />
@@ -1033,11 +1033,11 @@ export const ContentEditor: React.FC = () => {
 
               <div>
                 <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2 font-medium">
-                  Hızlı Satın Al (3D Secure) Buton Metni
+                  Hızlı Satın Al Buton Metni
                 </label>
                 <input
                   type="text"
-                  value={formData.productDetailInstantCheckoutText || 'Hemen Al & 3D Secure ile Güvenli Öde'}
+                  value={formData.productDetailInstantCheckoutText || 'Hemen Satın Al'}
                   onChange={(e) => handleChange('productDetailInstantCheckoutText', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
                 />
@@ -1127,6 +1127,17 @@ export const ContentEditor: React.FC = () => {
                 onChange={(e) => handleChange('cartSecurityBadgeText', e.target.value)}
                 className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
               />
+              <div className="mt-3 p-3 bg-white/5 rounded-xl border border-white/10 flex items-center justify-between">
+                <div className="text-xs text-zinc-400">
+                  <span className="text-zinc-200 font-medium">Ödeme & Güvenlik Kart Logoları:</span>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">iyzico 3D Secure, Visa ve Mastercard logoları vitrin ve ödeme alanlarında görüntülenir.</p>
+                </div>
+                <div className="flex items-center gap-2.5 bg-black/60 px-3 py-2 rounded-lg border border-white/10">
+                  <img src="/payment/iyzico.svg" alt="iyzico" className="h-4 w-auto object-contain opacity-95" />
+                  <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-85" />
+                  <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-85" />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1390,6 +1401,19 @@ export const ContentEditor: React.FC = () => {
               </div>
             </div>
 
+            {/* Footer Güvenlik & Ödeme Logoları Önizleme */}
+            <div className="p-3.5 bg-white/5 rounded-xl border border-white/10 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-zinc-300 font-medium">Footer Ödeme & Güvenlik Logoları:</span>
+                <p className="text-[11px] text-zinc-500 mt-0.5">iyzico altyapısı, Visa ve Mastercard logoları ile birlikte aktif olarak footer'da yer alır.</p>
+              </div>
+              <div className="flex items-center gap-2.5 bg-black/60 px-3 py-2 rounded-lg border border-white/10">
+                <img src="/payment/iyzico.svg" alt="iyzico" className="h-4 w-auto object-contain opacity-95" />
+                <img src="/payment/visa.svg" alt="Visa" className="h-4.5 w-auto object-contain opacity-85" />
+                <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4.5 w-auto object-contain opacity-85" />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2 font-medium">
@@ -1450,7 +1474,7 @@ export const ContentEditor: React.FC = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="px-8 py-3 rounded-xl bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#C5A059]/20 flex items-center gap-2 disabled:opacity-50"
+            className="px-8 py-3 rounded-xl bg-[#C5A059] hover:bg-[#d6b26b] text-black text-xs font-bold uppercase tracking-wider transition-all shadow-sm border border-[#C5A059] flex items-center gap-2 disabled:opacity-50"
           >
             {isSaving ? (
               <>

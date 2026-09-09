@@ -483,44 +483,27 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       className="w-full py-4 glass-panel hover:bg-white/10 text-[#C5A059] border border-[#C5A059]/50 hover:border-[#C5A059] rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>{isPreorder ? 'Ön Sipariş ile Hemen Al (3D Secure)' : 'Hemen Satın Al (3D Secure ile Güvenli Öde)'}</span>
+                      <span>{isPreorder ? 'Ön Sipariş ile Hemen Al' : 'Hemen Satın Al'}</span>
                     </button>
                   )}
                 </div>
               )}
 
               {/* Guarantees & Craftsmanship Bento */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bento-card flex items-start gap-3">
-                  <Truck className="w-5 h-5 text-[#C5A059] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-zinc-200">Sigortalı Teslimat</h4>
-                    <p className="text-[11px] text-zinc-400 font-light mt-0.5">Ahşap korumalı sandıkta ücretsiz kargo</p>
-                  </div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-2">
+                <div className="p-3 rounded-2xl bento-card flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-1.5 sm:gap-2.5 text-center sm:text-left">
+                  <Truck className="w-4 h-4 text-[#C5A059] flex-shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-semibold text-zinc-200">Hızlı Teslimat</span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bento-card flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-[#C5A059] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-zinc-200">2 Yıl Garanti</h4>
-                    <p className="text-[11px] text-zinc-400 font-light mt-0.5">Orijinal atölye malzeme güvencesi</p>
-                  </div>
+                <div className="p-3 rounded-2xl bento-card flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-1.5 sm:gap-2.5 text-center sm:text-left">
+                  <Shield className="w-4 h-4 text-[#C5A059] flex-shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-semibold text-zinc-200">2 Yıl Garanti</span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bento-card flex items-start gap-3">
-                  <Award className="w-5 h-5 text-[#C5A059] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-zinc-200">El İşçiliği</h4>
-                    <p className="text-[11px] text-zinc-400 font-light mt-0.5">Floransa & İstanbul usta işçiliği</p>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bento-card flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-[#C5A059] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-zinc-200">Özel Üretim</h4>
-                    <p className="text-[11px] text-zinc-400 font-light mt-0.5">Her parçaya özel seri numarası</p>
-                  </div>
+                <div className="p-3 rounded-2xl bento-card flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-1.5 sm:gap-2.5 text-center sm:text-left">
+                  <Award className="w-4 h-4 text-[#C5A059] flex-shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-semibold text-zinc-200">El Yapımı</span>
                 </div>
               </div>
 

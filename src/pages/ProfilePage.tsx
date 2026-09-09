@@ -909,7 +909,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     key={addr.id}
                     className={`bg-[#111115] border rounded-3xl p-6 glass-panel flex flex-col justify-between transition-all relative group ${
                       addr.isDefault 
-                        ? 'border-[#C5A059]/60 shadow-[0_0_25px_rgba(197,160,89,0.1)]' 
+                        ? 'border-[#C5A059]' 
                         : 'border-white/10 hover:border-white/20'
                     }`}
                   >

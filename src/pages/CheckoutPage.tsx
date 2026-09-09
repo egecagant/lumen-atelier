@@ -91,7 +91,7 @@ export const CheckoutPage: React.FC = () => {
   }, [currentSubtotal]);
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'iyzico' | 'bank_transfer' | 'cash_on_delivery'>('iyzico');
+  const [paymentMethod, setPaymentMethod] = useState<'iyzico' | 'bank_transfer'>('iyzico');
 
   // Coupon Input State
   const [couponInput, setCouponInput] = useState('');
@@ -539,9 +539,7 @@ export const CheckoutPage: React.FC = () => {
       title: 'Ödeme',
       subtitle: paymentMethod === 'iyzico' 
         ? 'Kartla 3D Güvenli Ödeme' 
-        : paymentMethod === 'bank_transfer' 
-        ? 'Havale (%3 İndirim)' 
-        : 'Kapıda VIP Ödeme',
+        : 'Havale (%3 İndirim)',
       icon: CreditCard,
       stepNumber: 3
     }
@@ -570,7 +568,7 @@ export const CheckoutPage: React.FC = () => {
                 Teşekkür Ederiz, {completedOrder.customerName || 'Değerli Müşterimiz'}
               </h1>
               <p className="text-zinc-400 text-xs sm:text-sm font-light max-w-lg mx-auto">
-                Siparişiniz başarıyla alındı. Özel heykelsi aydınlatma tasarımlarınız özenle ahşap sandıkta paketlenerek adresinize sevk edilecektir.
+                Siparişiniz başarıyla alındı. Özel heykelsi aydınlatma tasarımlarınız özenle paketlenerek hızlı kargo ile adresinize sevk edilecektir.
               </p>
 
               <div className="mt-6 inline-flex flex-col sm:flex-row items-center gap-3 bg-black/40 border border-white/10 rounded-2xl px-5 py-3">
@@ -679,7 +677,7 @@ export const CheckoutPage: React.FC = () => {
                     ) : null}
                     <div className="flex justify-between">
                       <span>Kargo:</span>
-                      <span>{completedOrder.shipping === 0 ? 'ÜCRETSİZ (Özel Sandık)' : formatCurrency(completedOrder.shipping)}</span>
+                      <span>{completedOrder.shipping === 0 ? 'ÜCRETSİZ (Hızlı Kargo)' : formatCurrency(completedOrder.shipping)}</span>
                     </div>
                     <div className="flex justify-between text-sm font-bold text-white pt-1 border-t border-white/10">
                       <span>Ödenen Toplam:</span>
@@ -807,7 +805,7 @@ export const CheckoutPage: React.FC = () => {
                         <div
                           className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border relative shadow-md transition-colors ${
                             isActive
-                              ? 'bg-[#C5A059] border-[#E5C378] text-black shadow-[#C5A059]/25 ring-2 ring-[#C5A059]/50'
+                              ? 'bg-[#C5A059] border-[#E5C378] text-black ring-1 ring-[#C5A059]/40'
                               : isCompleted
                               ? 'bg-[#18181D] border-white/20 text-zinc-200'
                               : 'bg-[#111116] border-white/10 text-zinc-400 hover:text-zinc-100 hover:border-white/20'
@@ -1465,7 +1463,7 @@ export const CheckoutPage: React.FC = () => {
               )}
 
             {/* --------------------------------------------------------
-                TAB 3: ÖDEME (iyzico 3D Secure, Havale, Kapıda Ödeme)
+                TAB 3: ÖDEME (iyzico 3D Secure, Havale)
             -------------------------------------------------------- */}
             {activeTab === 'payment' && (
               <section className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-6">
@@ -1543,6 +1541,7 @@ export const CheckoutPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <img src="/payment/iyzico.svg" alt="iyzico" className="h-4 w-auto object-contain opacity-90" />
                           <img src="/payment/visa.svg" alt="Visa" className="h-5 w-auto object-contain opacity-85" />
                           <img src="/payment/mastercard.svg" alt="Mastercard" className="h-5 w-auto object-contain opacity-85" />
                         </div>
@@ -1601,36 +1600,6 @@ export const CheckoutPage: React.FC = () => {
                           </div>
                         </div>
                       )}
-                    </div>
-
-                    {/* 3. Kapıda Ödeme (VIP Delivery) */}
-                    <div
-                      onClick={() => setPaymentMethod('cash_on_delivery')}
-                      className={`p-4 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all ${
-                        paymentMethod === 'cash_on_delivery'
-                          ? 'bg-gradient-to-br from-[#1C1C24] to-[#121217] border-[#C5A059] ring-1 ring-[#C5A059]/40 shadow-lg'
-                          : 'bg-black/30 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`p-2 rounded-xl ${paymentMethod === 'cash_on_delivery' ? 'bg-[#C5A059] text-black' : 'bg-white/5 text-zinc-400'}`}>
-                            <Truck className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <span className="text-sm font-serif-luxury font-medium text-white block">
-                              Kapıda VIP Kurye ile Ödeme
-                            </span>
-                            <span className="text-[11px] text-zinc-400 font-light">
-                              Teslimat anında nakit veya temassız POS ile ödeme
-                            </span>
-                          </div>
-                        </div>
-
-                        <span className="text-[10px] bg-white/10 text-zinc-300 border border-white/10 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          VIP Randevu
-                        </span>
-                      </div>
                     </div>
                   </div>
 
@@ -1691,18 +1660,25 @@ export const CheckoutPage: React.FC = () => {
                       type="button"
                       disabled={loading || !termsAccepted}
                       onClick={handlePlaceOrder}
-                      className="w-full sm:w-auto px-10 py-4 bg-[#C5A059] hover:bg-[#d6b26b] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-all shadow-xl flex items-center justify-center gap-2.5 cursor-pointer"
+                      className="w-full sm:w-auto px-10 h-12 bg-[#C5A059] hover:bg-[#d6b26b] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer border border-[#C5A059]"
+                      title={paymentMethod === 'iyzico' ? "iyzico ile Güvenli Öde" : "Güvenli Ödemeyi Tamamla"}
                     >
                       {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>İşlem Yapılıyor...</span>
-                        </>
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-black" />
+                          <span className="text-black text-xs font-semibold normal-case">İşlem Yapılıyor...</span>
+                        </div>
+                      ) : paymentMethod === 'iyzico' ? (
+                        <img 
+                          src="/payment/iyzico-ile-ode-dark.svg" 
+                          alt="iyzico ile Öde" 
+                          className="h-5 sm:h-5.5 w-auto object-contain" 
+                        />
                       ) : (
-                        <>
+                        <div className="flex items-center gap-2">
                           <Lock className="w-4 h-4" />
                           <span>Güvenli Ödemeyi Tamamla ({formatCurrency(finalPayableTotal)})</span>
-                        </>
+                        </div>
                       )}
                     </button>
                   </div>
@@ -1784,20 +1760,20 @@ export const CheckoutPage: React.FC = () => {
                 {/* Trust Badges */}
                 <div className="pt-4 border-t border-white/5 grid grid-cols-2 gap-2 text-[10px] text-zinc-400">
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                    <span>3D Secure</span>
+                    <CheckCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
+                    <span>14 Gün İade</span>
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
                     <Truck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                    <span>Ahşap Sandık</span>
+                    <span>Hızlı Teslimat</span>
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
                     <Sparkles className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
                     <span>2 Yıl Garanti</span>
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/30 border border-white/5">
-                    <CheckCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
-                    <span>14 Gün İade</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
+                    <span>3D Secure</span>
                   </div>
                 </div>
 
@@ -1805,6 +1781,7 @@ export const CheckoutPage: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
                   <span className="text-zinc-500">Güvenli Kart Altyapısı</span>
                   <div className="flex items-center gap-2">
+                    <img src="/payment/iyzico.svg" alt="iyzico" className="h-3.5 w-auto object-contain opacity-90" />
                     <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-75" />
                     <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-75" />
                   </div>

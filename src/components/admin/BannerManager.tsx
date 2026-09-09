@@ -159,7 +159,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
         <button
           id="admin-add-banner-btn"
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-[#d4af37] hover:bg-[#e4bd43] text-black text-xs font-bold uppercase tracking-wider rounded-lg shadow-xl shadow-[#d4af37]/15 transition-all"
+          className="inline-flex items-center gap-2 px-5 py-3 bg-[#d4af37] hover:bg-[#e4bd43] text-black text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm border border-[#d4af37] transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>Yeni Banner Ekle</span>

@@ -45,9 +45,6 @@ import { getProductSlug } from './lib/slugify';
 import { MAINTENANCE_MODE, MAINTENANCE_BYPASS_EMAILS } from './lib/maintenance';
 import { MaintenanceScreen } from './components/MaintenanceScreen';
 
-// Analytics & tracking flag (currently false per compliance guidelines; cookie banner remains hidden until enabled)
-const ANALYTICS_ENABLED = false;
-
 function StoreLayout({
   categories,
   onOpenAuth,
@@ -802,8 +799,8 @@ function MainApp() {
         </div>
       )}
 
-      {/* Cookie Consent Banner (Active when ANALYTICS_ENABLED is true) */}
-      <CookieConsent analyticsEnabled={ANALYTICS_ENABLED} />
+      {/* Cookie Consent Banner */}
+      <CookieConsent />
     </div>
   );
 }

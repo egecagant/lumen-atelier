@@ -214,7 +214,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               <button
                 id="load-more-products-btn"
                 onClick={handleLoadMore}
-                className="group relative inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#C5A059] via-[#d6b26b] to-[#C5A059] hover:from-[#d6b26b] hover:to-[#C5A059] text-black font-semibold text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-[#C5A059]/20 hover:shadow-[#C5A059]/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+                className="group relative inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl bg-[#C5A059] hover:bg-[#d6b26b] text-black font-semibold text-xs sm:text-sm uppercase tracking-wider shadow-sm border border-[#C5A059] active:translate-y-0 transition-all cursor-pointer"
               >
                 <span>Daha Fazla Yükle (+{nextBatchCount} Ürün)</span>
                 <ChevronDown className="w-4 h-4 text-black group-hover:translate-y-0.5 transition-transform" />

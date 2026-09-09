@@ -79,7 +79,7 @@ export const ContactSection: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-semibold">
-                    {settings.contactPhoneTitle || 'Müşteri Hattı & WhatsApp'}
+                    {settings.contactPhoneTitle === 'Müşteri Hattı & WhatsApp' ? 'Müşteri Hattı' : (settings.contactPhoneTitle || 'Müşteri Hattı')}
                   </span>
                   <p className="text-zinc-200 font-medium text-xs sm:text-sm mt-0.5 truncate">
                     {settings.contactPhoneText || COMPANY.phone}
@@ -99,7 +99,7 @@ export const ContactSection: React.FC = () => {
                   href={COMPANY.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white transition-colors text-center font-medium flex items-center justify-center gap-1.5 border border-white/10"
+                  className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white transition-colors text-center font-medium flex items-center justify-center gap-1.5"
                 >
                   <MessageCircle className="w-3 h-3 text-[#C5A059]" />
                   <span>WhatsApp</span>

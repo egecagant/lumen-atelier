@@ -471,7 +471,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
             id="admin-add-product-btn"
             type="button"
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-5 py-3 bg-[#d4af37] hover:bg-[#e4bd43] text-black text-xs font-bold uppercase tracking-wider rounded-lg shadow-xl shadow-[#d4af37]/15 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-3 bg-[#d4af37] hover:bg-[#e4bd43] text-black text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm border border-[#d4af37] transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Yeni Lamba Ekle</span>
@@ -832,7 +832,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                       <div 
                         key={idx} 
                         className={`relative group rounded-2xl overflow-hidden border transition-all bg-black flex flex-col ${
-                          idx === 0 ? 'border-[#C5A059] shadow-[0_0_15px_rgba(197,160,89,0.2)] ring-1 ring-[#C5A059]/50' : 'border-white/15 hover:border-white/40'
+                          idx === 0 ? 'border-[#C5A059] ring-1 ring-[#C5A059]/50' : 'border-white/15 hover:border-white/40'
                         }`}
                       >
                         {/* Image Thumbnail Box */}

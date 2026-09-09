@@ -205,10 +205,10 @@ export const GoogleMerchantFeedModal: React.FC<GoogleMerchantFeedModalProps> = (
                   <button
                     type="button"
                     onClick={handleCopyUrl}
-                    className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                    className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm ${
                       copiedUrl 
-                        ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
-                        : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black shadow-lg shadow-[#C5A059]/20'
+                        ? 'bg-emerald-500 text-black' 
+                        : 'bg-[#C5A059] hover:bg-[#d6b26b] text-black border border-[#C5A059]'
                     }`}
                   >
                     {copiedUrl ? (
@@ -231,7 +231,7 @@ export const GoogleMerchantFeedModal: React.FC<GoogleMerchantFeedModalProps> = (
                 <button
                   type="button"
                   onClick={handleClientDownload}
-                  className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl inline-flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+                  className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold rounded-xl inline-flex items-center gap-2 transition-all cursor-pointer shadow-sm"
                 >
                   <Download className="w-4 h-4" />
                   <span>XML Dosyasını İndir (.xml)</span>

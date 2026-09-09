@@ -109,14 +109,14 @@ export const CustomDesignPage: React.FC = () => {
     {
       step: '03',
       icon: Hammer,
-      title: 'Usta El İşçiliği',
-      desc: 'Onaylanan tasarımınız atölyemizde deneyimli zanaatkârlarımız tarafından kusursuz hassasiyetle üretilir.'
+      title: 'El Yapımı Üretim',
+      desc: 'Onaylanan tasarımınız atölyemizde özenle ve kusursuz hassasiyetle üretilir.'
     },
     {
       step: '04',
       icon: ShieldCheck,
-      title: 'Özenli Teslimat',
-      desc: 'Tamamlanan aydınlatma tasarımınız özel korumalı ambalajıyla sigortalı olarak güvenle adresinize ulaştırılır.'
+      title: 'Hızlı Teslimat',
+      desc: 'Tamamlanan aydınlatma tasarımınız Yurtiçi Kargo güvencesiyle hızlı ve özenli şekilde adresinize ulaştırılır.'
     }
   ];
 
@@ -424,16 +424,16 @@ export const CustomDesignPage: React.FC = () => {
                     href={COMPANY.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 bento-card p-2.5 sm:p-3 rounded-xl hover:border-[#25D366]/50 transition-colors group cursor-pointer"
+                    className="flex items-center gap-2.5 bento-card p-2.5 sm:p-3 rounded-xl hover:border-[#C5A059]/50 transition-colors group cursor-pointer"
                   >
-                    <div className="p-1.5 rounded-lg bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <div className="p-1.5 rounded-lg bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0 group-hover:scale-110 transition-transform">
                       <MessageCircle className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
                       <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">
-                        {settings.contactPhoneTitle || 'Müşteri Hattı & WhatsApp'}
+                        {settings.contactPhoneTitle === 'Müşteri Hattı & WhatsApp' ? 'Müşteri Hattı' : (settings.contactPhoneTitle || 'Müşteri Hattı')}
                       </span>
-                      <p className="text-zinc-300 font-medium text-xs truncate group-hover:text-emerald-400 transition-colors">
+                      <p className="text-zinc-300 font-medium text-xs truncate group-hover:text-[#C5A059] transition-colors">
                         {settings.contactPhoneText || COMPANY.phone}
                       </p>
                     </div>

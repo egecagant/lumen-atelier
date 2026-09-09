@@ -308,7 +308,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               onWheel={handleWheel}
-              className={`relative overflow-hidden cursor-grab active:cursor-grabbing border-2 border-[#C5A059] shadow-[0_0_30px_rgba(197,160,89,0.25)] rounded-2xl bg-black ${
+              className={`relative overflow-hidden cursor-grab active:cursor-grabbing border-2 border-[#C5A059] shadow-2xl rounded-2xl bg-black ${
                 selectedRatio === '1:1' 
                   ? 'w-[280px] h-[280px] sm:w-[360px] sm:h-[360px]' 
                   : selectedRatio === '16:9'
