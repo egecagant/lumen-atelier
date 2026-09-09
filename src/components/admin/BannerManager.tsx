@@ -47,7 +47,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
     setFormData({
       title: banner.title,
       subtitle: banner.subtitle,
-      buttonText: banner.buttonText || 'İNCELE',
+      buttonText: banner.buttonText || 'Hemen Satın Al',
       linkUrl: banner.linkUrl || '#koleksiyon',
       imageUrl: banner.imageUrl,
       active: banner.active ?? true,
@@ -195,7 +195,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
                 <span className="text-[11px] text-zinc-400 font-mono">Link: {b.linkUrl}</span>
               </div>
 
-              <h4 className="font-sans text-lg text-zinc-100 uppercase font-bold tracking-wide">
+              <h4 className="font-sans text-lg text-zinc-100 font-bold tracking-wide">
                 {b.title}
               </h4>
               <p className="text-xs text-zinc-400 font-light">
@@ -210,7 +210,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
             <div className="flex md:flex-col items-center gap-2 self-end md:self-center">
               <button
                 onClick={() => toggleActive(b)}
-                className={`px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${
+                className={`px-3 py-1.5 rounded text-xs font-semibold tracking-wider transition-colors ${
                   b.active ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800'
                 }`}
               >
@@ -252,7 +252,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#141418] border border-zinc-800 rounded-2xl p-6 max-w-sm w-full space-y-4 text-center">
             <Trash2 className="w-10 h-10 text-rose-500 mx-auto" />
-            <h4 className="font-sans text-lg font-bold text-zinc-100">Bannerı Silmek İstiyor Musunuz?</h4>
+            <h4 className="font-sans text-lg font-bold text-zinc-100">Banner'ı silmek istiyor musunuz?</h4>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setDeleteConfirmId(null)}
@@ -276,8 +276,8 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="relative w-full max-w-xl bg-[#111114] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <div className="p-5 border-b border-zinc-800 flex items-center justify-between bg-[#0a0a0c]">
-              <h3 className="font-sans text-lg font-bold text-zinc-100 uppercase tracking-wider">
-                {editingBanner ? 'Bannerı Düzenle' : 'Yeni Hero Banner Ekle'}
+              <h3 className="font-sans text-lg font-bold text-zinc-100 tracking-wide">
+                {editingBanner ? "Banner'ı Düzenle" : 'Yeni Hero Banner Ekle'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="p-1.5 text-zinc-400 hover:text-white rounded-full">
                 <X className="w-5 h-5" />
@@ -286,7 +286,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
               <div>
-                <label className="block uppercase tracking-wider text-zinc-400 mb-1 font-semibold">
+                <label className="block tracking-wider text-zinc-400 mb-1 font-semibold">
                   Banner Başlığı *
                 </label>
                 <input
@@ -294,13 +294,13 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Örn: ASTRONOT KOZMİK MASA LAMBASI"
-                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 focus:border-[#c5a880] focus:outline-none uppercase"
+                  placeholder="Örn: Astronot Kozmik Çocuk Masa Lambası"
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 focus:border-[#c5a880] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block uppercase tracking-wider text-zinc-400 mb-1 font-semibold">
+                <label className="block tracking-wider text-zinc-400 mb-1 font-semibold">
                   Alt Metin / Açıklama
                 </label>
                 <textarea
@@ -313,7 +313,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
               </div>
 
               <div>
-                <label className="block uppercase tracking-wider text-zinc-400 mb-1 font-semibold flex justify-between">
+                <label className="block tracking-wider text-zinc-400 mb-1 font-semibold flex justify-between">
                   <span>Banner Arka Plan Görseli URL *</span>
                   <label className="cursor-pointer text-[#c5a880] hover:text-[#d4af37] flex items-center gap-1 font-normal normal-case">
                     <Upload className="w-3 h-3" /> Dosyadan Yükle
@@ -342,14 +342,14 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block uppercase tracking-wider text-zinc-400 mb-1 font-semibold">
+                  <label className="block tracking-wider text-zinc-400 mb-1 font-semibold">
                     Buton Metni
                   </label>
                   <input
                     type="text"
                     value={formData.buttonText}
                     onChange={(e) => setFormData({ ...formData, buttonText: e.target.value })}
-                    placeholder="KOLEKSİYONU KEŞFET"
+                    placeholder="Örn: Hemen Satın Al"
                     className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none"
                   />
                 </div>
@@ -409,7 +409,7 @@ export const BannerManager: React.FC<BannerManagerProps> = ({ banners }) => {
                   className="px-6 py-2 bg-[#d4af37] hover:bg-[#e4bd43] text-black font-bold uppercase rounded-lg shadow-lg flex items-center gap-2"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{editingBanner ? 'Güncelle' : 'Bannerı Ekle'}</span>
+                  <span>{editingBanner ? 'Güncelle' : "Banner'ı Ekle"}</span>
                 </button>
               </div>
             </form>

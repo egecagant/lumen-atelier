@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Sparkles, ArrowRight } from 'lucide-react';
+import { Mail, Phone, MapPin, Sparkles, ArrowRight, MessageCircle } from 'lucide-react';
 import { useSiteSettings } from '../context/SiteSettingsContext';
+import { COMPANY } from '../lib/companyInfo';
 
 export const ContactSection: React.FC = () => {
   const { settings } = useSiteSettings();
@@ -14,9 +15,9 @@ export const ContactSection: React.FC = () => {
           {/* Left Column: Brand Story & Title */}
           <div className="lg:col-span-6 space-y-4 sm:space-y-6">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs uppercase tracking-[0.25em] text-[#C5A059] mb-1.5 font-semibold">
+              <div className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs tracking-[0.2em] text-[#C5A059] mb-1.5 font-semibold">
                 <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C5A059]" />
-                <span>{settings.contactBadge || 'ÖZEL TASARIM & İLETİŞİM'}</span>
+                <span>{settings.contactBadge || 'Özel Tasarım & İletişim'}</span>
               </div>
               <h2 className="font-serif-luxury text-2xl sm:text-3xl lg:text-4xl text-white tracking-tight leading-tight">
                 {settings.contactTitle || 'Size Özel Işık Tasarımı'}
@@ -46,16 +47,16 @@ export const ContactSection: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-semibold">
-                  {settings.contactAddressTitle || 'Showroom & Atölye'}
+                  {settings.contactAddressTitle || 'Showroom & Merkez'}
                 </span>
-                <p className="text-zinc-200 font-medium text-xs sm:text-sm mt-0.5">
-                  {settings.contactAddressText || 'Abdi İpekçi Caddesi No: 42, Nişantaşı / İstanbul'}
+                <p className="text-zinc-200 font-medium text-xs sm:text-sm mt-0.5 leading-relaxed">
+                  {settings.contactAddressText || COMPANY.address}
                 </p>
               </div>
             </div>
 
             <a 
-              href={`mailto:${settings.contactEmailText || 'hello@lumenlatelier.com'}`}
+              href={`mailto:${settings.contactEmailText || COMPANY.email}`}
               className="bento-card p-4 rounded-2xl flex items-start gap-3.5 border border-white/10 sm:hover:border-[#C5A059]/50 transition-colors"
             >
               <div className="p-2.5 rounded-xl bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0">
@@ -66,27 +67,45 @@ export const ContactSection: React.FC = () => {
                   {settings.contactEmailTitle || 'E-Posta İletişimi'}
                 </span>
                 <p className="text-zinc-200 font-medium text-xs sm:text-sm mt-0.5 truncate">
-                  {settings.contactEmailText || 'hello@lumenlatelier.com'}
+                  {settings.contactEmailText || COMPANY.email}
                 </p>
               </div>
             </a>
 
-            <a 
-              href={`tel:${(settings.contactPhoneText || '+902128402025').replace(/\s+/g, '')}`}
-              className="bento-card p-4 rounded-2xl flex items-start gap-3.5 border border-white/10 sm:hover:border-[#C5A059]/50 transition-colors"
-            >
-              <div className="p-2.5 rounded-xl bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0">
-                <Phone className="w-4 h-4" />
+            <div className="bento-card p-4 rounded-2xl flex flex-col justify-between border border-white/10 sm:hover:border-[#C5A059]/50 transition-colors">
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 rounded-xl bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-semibold">
+                    {settings.contactPhoneTitle || 'Müşteri Hattı & WhatsApp'}
+                  </span>
+                  <p className="text-zinc-200 font-medium text-xs sm:text-sm mt-0.5 truncate">
+                    {settings.contactPhoneText || COMPANY.phone}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-semibold">
-                  {settings.contactPhoneTitle || 'Telefon & WhatsApp'}
-                </span>
-                <p className="text-zinc-200 font-medium text-xs sm:text-sm mt-0.5 truncate">
-                  {settings.contactPhoneText || '+90 (212) 840 20 25'}
-                </p>
+
+              <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-white/10 text-xs">
+                <a
+                  href={`tel:${(settings.contactPhoneText || COMPANY.phone).replace(/\s+/g, '')}`}
+                  className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white transition-colors text-center font-medium flex items-center justify-center gap-1.5"
+                >
+                  <Phone className="w-3 h-3 text-[#C5A059]" />
+                  <span>Ara</span>
+                </a>
+                <a
+                  href={COMPANY.whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-200 hover:text-white transition-colors text-center font-medium flex items-center justify-center gap-1.5 border border-white/10"
+                >
+                  <MessageCircle className="w-3 h-3 text-[#C5A059]" />
+                  <span>WhatsApp</span>
+                </a>
               </div>
-            </a>
+            </div>
           </div>
 
         </div>

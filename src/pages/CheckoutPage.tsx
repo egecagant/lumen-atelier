@@ -251,7 +251,7 @@ export const CheckoutPage: React.FC = () => {
 
     if (address.invoiceType === 'corporate') {
       if (!address.companyName?.trim()) {
-        errors.companyName = 'Firma ünvanı zorunludur.';
+        errors.companyName = 'Firma unvanı zorunludur.';
       }
       if (!address.taxNumber?.trim()) {
         errors.taxNumber = 'Vergi kimlik numarası zorunludur.';
@@ -1363,13 +1363,13 @@ export const CheckoutPage: React.FC = () => {
                         <div className="mt-3 p-4 rounded-xl bg-black/40 border border-white/10 space-y-3">
                           <div>
                             <label className="block text-xs text-zinc-300 mb-1">
-                              Firma Ünvanı <span className="text-[#C5A059]">*</span>
+                              Firma Unvanı <span className="text-[#C5A059]">*</span>
                             </label>
                             <input
                               type="text"
                               value={address.companyName || ''}
                               onChange={(e) => setAddress({ ...address, companyName: e.target.value })}
-                              placeholder="Şirket Tam Resmi Ünvanı"
+                              placeholder="Şirket Tam Resmi Unvanı"
                               className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-xs text-white"
                             />
                             {formErrors.companyName && (

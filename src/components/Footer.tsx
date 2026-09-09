@@ -136,11 +136,6 @@ export const Footer: React.FC<FooterProps> = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/kvkk-basvuru" className="hover:text-[#C5A059] transition-colors">
-                  KVKK Veri Sahibi Başvurusu
-                </Link>
-              </li>
-              <li>
                 <Link to="/kullanim-kosullari" className="hover:text-[#C5A059] transition-colors">
                   Kullanım Koşulları
                 </Link>

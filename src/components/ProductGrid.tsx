@@ -108,8 +108,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     : (settings.productSectionTitle || 'Tüm Ürünler');
 
   const sectionBadge = selectedCategory
-    ? 'KATEGORİ KOLEKSİYONU'
-    : (settings.productSectionBadge || 'LÜKS AYDINLATMA KOLEKSİYONU');
+    ? 'Kategori Koleksiyonu'
+    : (settings.productSectionBadge || 'Lüks Aydınlatma Koleksiyonu');
 
   const sectionDesc = selectedCategory
     ? (currentCategoryObj?.description || 'Bu kategorideki özel heykelsi el yapımı aydınlatma tasarımları.')

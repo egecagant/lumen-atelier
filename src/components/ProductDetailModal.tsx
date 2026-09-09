@@ -286,7 +286,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </span>
                 )}
                 <span className="text-xs text-zinc-400 ml-auto">
-                  {settings.productDetailTaxIncludedText || 'KDV Dahil'}
+                  {settings.productDetailTaxIncludedText || 'KDV Dâhil'}
                 </span>
               </div>
             )}

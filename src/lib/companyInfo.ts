@@ -5,6 +5,8 @@ export const COMPANY = {
   address: 'Yenimahalle Mah. Teyyareci Sadık Sok. No:50 A, 34142 Bakırköy / İstanbul',
   email: 'hello@lumenlatelier.com',
   phone: '0537 267 53 86',
+  whatsapp: '0537 267 53 86',
+  whatsappUrl: 'https://wa.me/905372675386',
   website: 'https://www.lumenlatelier.com',
   taxOffice: 'Bakırköy Vergi Dairesi',
   taxNumber: '3800736453',

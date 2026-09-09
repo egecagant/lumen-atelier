@@ -23,6 +23,7 @@ import {
 import firebaseConfigData from './firebase-applet-config.json' with { type: 'json' };
 import { generateGoogleMerchantXml } from './src/lib/googleMerchantFeed.ts';
 import { MAINTENANCE_MODE } from './src/lib/maintenance.ts';
+import { sendOrderConfirmationEmail, isResendConfigured } from './server/emailService.ts';
 
 dotenv.config();
 
@@ -470,8 +471,65 @@ async function startServer() {
       status: 'ok',
       service: 'LUMEN L\'atelier Engine',
       hasApiKey: !!process.env.IYZICO_API_KEY,
+      hasResendKey: isResendConfigured(),
+      fromEmail: process.env.RESEND_FROM_EMAIL || 'LUMEN <siparis@lumenlatelier.com>',
       time: new Date().toISOString()
     });
+  });
+
+  // Admin test email endpoint to check Resend configuration
+  app.post('/api/admin/resend/test', async (req, res) => {
+    try {
+      const targetEmail = req.body?.email || 'egecagant@gmail.com';
+      if (!isResendConfigured()) {
+        return res.status(400).json({
+          success: false,
+          configured: false,
+          message: 'RESEND_API_KEY ortam değişkeni tanımlı değil. Lütfen Settings/Secrets veya .env dosyasına RESEND_API_KEY ekleyin.'
+        });
+      }
+
+      const dummyOrder = {
+        id: 'LUM-TEST-' + Math.floor(1000 + Math.random() * 9000),
+        customerName: 'Test Alıcısı (Yönetici)',
+        customerEmail: targetEmail,
+        customerPhone: '0537 267 53 86',
+        total: 1890,
+        subtotal: 1890,
+        shipping: 0,
+        paymentMethod: 'iyzico',
+        status: 'paid',
+        createdAt: Date.now(),
+        items: [
+          {
+            title: 'Nero Marquina Mermer & Pirinç Heykelsi Lamba (Test)',
+            quantity: 1,
+            price: 1890,
+            selectedColor: 'Doğal Siyah Mermer'
+          }
+        ],
+        address: {
+          fullName: 'Test Alıcısı',
+          addressDetail: 'Yenimahalle Mah. Teyyareci Sadık Sok. No:50 A',
+          district: 'Bakırköy',
+          city: 'İstanbul',
+          phone: '0537 267 53 86'
+        }
+      };
+
+      const result = await sendOrderConfirmationEmail(dummyOrder as any);
+      return res.json({
+        success: result.success,
+        configured: true,
+        targetEmail,
+        result
+      });
+    } catch (testErr: any) {
+      return res.status(500).json({
+        success: false,
+        error: testErr.message || 'E-posta testi sırasında hata oluştu'
+      });
+    }
   });
 
   // Google Merchant Center & Google Shopping XML Feed Endpoint
@@ -691,6 +749,11 @@ async function startServer() {
       await setDoc(doc(db, 'orders', orderId), cleanPayload);
 
       console.log(`[Orders] Order ${orderId} successfully created with total ${serverTotal} TL`);
+
+      // Asynchronously send order confirmation email via Resend (never blocks response)
+      sendOrderConfirmationEmail(cleanPayload as any).catch((mailErr) => {
+        console.error(`[Resend] Order ${orderId} email sending error:`, mailErr);
+      });
 
       return res.json({
         success: true,
@@ -1018,6 +1081,11 @@ async function startServer() {
           const cleanPayload = cleanData(finalOrder);
           await setDoc(doc(db, 'orders', orderId), cleanPayload);
           console.log(`[iyzico] Order ${orderId} successfully saved to Firestore with status '${finalOrder.status}'`);
+
+          // Asynchronously send order confirmation email via Resend
+          sendOrderConfirmationEmail(cleanPayload as any).catch((mailErr) => {
+            console.error(`[Resend] iyzico order ${orderId} email sending error:`, mailErr);
+          });
         } catch (dbErr) {
           console.error('[iyzico] Firestore write error on callback:', dbErr);
         }

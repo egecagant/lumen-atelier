@@ -285,7 +285,7 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
                     <span>Misafir Olarak Satın Alıyorsunuz</span>
                   </div>
                   <p className="text-[11px] text-zinc-400 mt-0.5">
-                    İsim Soyisim, Telefon, Mail ve Normal Adres bilgilerinizi doldurarak hızlıca sipariş verebilirsiniz.
+                    Ad Soyad, telefon, e-posta ve açık teslimat adresi bilgilerinizi doldurarak hızlıca sipariş verebilirsiniz.
                   </p>
                 </div>
                 <button
@@ -310,7 +310,7 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                    İsim Soyisim (Ad Soyad) *
+                    Ad Soyad *
                   </label>
                   <input
                     type="text"
@@ -324,7 +324,7 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                    Mail Adresi (E-Posta) *
+                    E-Posta Adresi *
                   </label>
                   <input
                     type="email"
@@ -369,7 +369,7 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
 
               <div>
                 <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                  Normal Adres (Açık Teslimat Adresi) *
+                  Açık Teslimat Adresi *
                 </label>
                 <textarea
                   required

@@ -139,12 +139,12 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     }
   ],
 
-  categorySectionBadge: 'BENTO KOLEKSİYON DİZİLİMİ',
+  categorySectionBadge: 'Bento Koleksiyon Dizilimi',
   categorySectionTitle: 'Kategoriye Göre Keşfedin',
   categorySectionDescription: 'Yaşam alanlarınıza sıcaklık ve heykelsi bir estetik katmak için hazırlanan seçkin lamba grupları.',
   categoryCardExploreText: 'Koleksiyonu Keşfet',
   
-  productSectionBadge: 'LÜKS AYDINLATMA KOLEKSİYONU',
+  productSectionBadge: 'Lüks Aydınlatma Koleksiyonu',
   productSectionTitle: 'Tüm Ürünler',
   productSectionDescription: 'Yaşam alanlarınız için özenle tasarlanan modern ve heykelsi aydınlatma armatürleri.',
   productFilterAllText: 'Tümü',
@@ -161,8 +161,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   productEmptyNewsletterPlaceholder: 'E-posta adresinizi bırakın (İlk siz öğrenin)',
   productEmptyNewsletterBtnText: 'Haber Ver',
 
-  productDetailStoryTitle: 'Tasarım Hikayesi',
-  productDetailTaxIncludedText: 'KDV Dahil',
+  productDetailStoryTitle: 'Tasarım Hikâyesi',
+  productDetailTaxIncludedText: 'KDV Dâhil',
   productDetailMaterialLabel: 'Materyal',
   productDetailDimensionsLabel: 'Boyutlar',
   productDetailLightSpecsLabel: 'Işık & Duy',
@@ -180,15 +180,15 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   cartCheckoutBtnText: 'Siparişi Tamamla & Güvenli Öde',
   cartSecurityBadgeText: 'PCI-DSS Seviye 1 & 3D Secure Korumalı Güvenli Ödeme',
   
-  contactBadge: 'ÖZEL TASARIM & TALEP',
+  contactBadge: 'Özel Tasarım & Talep',
   contactTitle: 'Size Özel Işık Tasarımı',
-  contactDescription: 'LUMEN ATELIER olarak, mekanlarınıza ve hayallerinize uyum sağlayan kişiye özel aydınlatma tasarımları gerçekleştiriyoruz. Size özel aydınlatma tasarımı talepleriniz ve projeleriniz için ekibimizle iletişime geçebilirsiniz.',
+  contactDescription: 'LUMEN olarak, mekanlarınıza ve hayallerinize uyum sağlayan kişiye özel aydınlatma tasarımları gerçekleştiriyoruz. Size özel aydınlatma tasarımı talepleriniz ve projeleriniz için ekibimizle iletişime geçebilirsiniz.',
   contactAddressTitle: 'Showroom & Merkez',
-  contactAddressText: 'Abdi İpekçi Caddesi No: 42, Nişantaşı / İstanbul',
+  contactAddressText: 'Yenimahalle Mah. Teyyareci Sadık Sok. No:50 A, 34142 Bakırköy / İstanbul',
   contactEmailTitle: 'Özel Tasarım & Sipariş İletişimi',
   contactEmailText: 'hello@lumenlatelier.com',
   contactPhoneTitle: 'Müşteri Hattı & WhatsApp',
-  contactPhoneText: '+90 (212) 840 20 25 / +90 532 000 00 00',
+  contactPhoneText: '+90 537 267 53 86',
   contactWorkingHoursTitle: '',
   contactWorkingHoursText: '',
   contactFormNameLabel: 'Adınız Soyadınız *',
@@ -202,7 +202,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   
   footerBrandText: 'Özel tasarım masa lambaları, heykelsi abajurlar, çocuk serileri ve mimari aydınlatma armatürleri. Işığın sanatsal formu.',
   footerQualityBadge: 'Tescilli Özgün Tasarım & 2 Yıl Garanti',
-  footerCopyright: "© 2026 Ege Çağan Tokgöz (LUMEN L'atelier). Tüm Hakları Saklıdır.",
+  footerCopyright: '© 2026 LUMEN. Tüm Hakları Saklıdır.',
   footerCol1Title: 'Koleksiyonlar',
   footerCol2Title: 'Hizmetler & Destek',
   footerCol3Title: 'Yönetim & Güvenlik',
@@ -255,8 +255,20 @@ function sanitizeSettings(data: Partial<SiteSettings>): SiteSettings {
   if (!merged.footerQualityBadge || merged.footerQualityBadge.includes('%100 Kalite')) {
     merged.footerQualityBadge = 'Tescilli Özgün Tasarım & 2 Yıl Garanti';
   }
-  if (!merged.footerCopyright || merged.footerCopyright.includes("L'atelier")) {
-    merged.footerCopyright = '© 2026 Ege Çağan Tokgöz (LUMEN ATELIER). Tüm Hakları Saklıdır.';
+  if (!merged.contactAddressText || merged.contactAddressText.includes('Nişantaşı') || merged.contactAddressText.includes('Abdi İpekçi')) {
+    merged.contactAddressText = 'Yenimahalle Mah. Teyyareci Sadık Sok. No:50 A, 34142 Bakırköy / İstanbul';
+  }
+  if (!merged.contactAddressTitle || merged.contactAddressTitle === 'Showroom & Atölye') {
+    merged.contactAddressTitle = 'Showroom & Merkez';
+  }
+  if (!merged.contactPhoneText || merged.contactPhoneText.includes('840 20 25') || merged.contactPhoneText.includes('000 00 00') || merged.contactPhoneText.includes('212')) {
+    merged.contactPhoneText = '+90 537 267 53 86';
+  }
+  if (!merged.contactPhoneTitle) {
+    merged.contactPhoneTitle = 'Müşteri Hattı & WhatsApp';
+  }
+  if (!merged.footerCopyright || merged.footerCopyright.includes("L'atelier") || merged.footerCopyright.includes("Ege Çağan Tokgöz")) {
+    merged.footerCopyright = '© 2026 LUMEN ATELIER. Tüm Hakları Saklıdır.';
   }
 
   return merged;
@@ -287,7 +299,12 @@ export const SiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
             data.contactTitle?.includes('Mekanınıza Özel') ||
             data.contactBadge?.includes('MİMARİ') ||
             data.contactDescription?.includes('pirinç dökümler') ||
-            data.contactFormSubmitBtnText?.includes('Danışman')
+            data.contactFormSubmitBtnText?.includes('Danışman') ||
+            data.contactAddressText?.includes('Nişantaşı') ||
+            data.contactAddressText?.includes('Abdi İpekçi') ||
+            data.contactPhoneText?.includes('840 20 25') ||
+            data.contactPhoneText?.includes('212') ||
+            data.contactAddressTitle === 'Showroom & Atölye'
           ) {
             setDoc(settingsDocRef, sanitized, { merge: true }).catch(() => {});
           }

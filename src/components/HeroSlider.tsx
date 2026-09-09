@@ -31,11 +31,29 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     return () => clearInterval(timer);
   }, [activeBanners.length]);
 
+  // Helper to format text: if a banner title/button is written in full uppercase, convert to elegant Title Case
+  const formatBannerText = (text?: string): string => {
+    if (!text) return '';
+    const trimmed = text.trim();
+    // If the text was written in FULL UPPERCASE, convert to elegant Title Case using Turkish locale
+    const isAllUpper = trimmed === trimmed.toLocaleUpperCase('tr-TR') && trimmed.length > 2;
+    if (!isAllUpper) return trimmed;
+
+    return trimmed
+      .toLocaleLowerCase('tr-TR')
+      .split(' ')
+      .map((word) => {
+        if (!word) return '';
+        return word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1);
+      })
+      .join(' ');
+  };
+
   // Banners to display (active banners from DB or default luxury banner)
   const displayBanners = activeBanners.length > 0 ? activeBanners : [
     {
       id: 'default-lumen',
-      title: 'ÖZEL TASARIM HEYKELSİ AYDINLATMA',
+      title: 'Özel Tasarım Heykelsi Aydınlatma',
       subtitle: 'El yapımı masif malzemeler, çocuk odası lambaları ve mimari aydınlatma koleksiyonları.',
       buttonText: 'Hemen Satın Al',
       linkUrl: '#koleksiyon',
@@ -121,8 +139,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       {/* Hero Content Overlay */}
       <div className="relative z-20 w-full max-w-[1720px] mx-auto h-full px-4 sm:px-6 lg:px-8 xl:px-12 flex flex-col justify-end pb-12 sm:pb-20">
         <div className="max-w-2xl space-y-3 sm:space-y-4">
-          <h1 className="font-serif-luxury text-2xl sm:text-5xl lg:text-6xl font-medium tracking-tight text-white leading-[1.15] uppercase">
-            {currentBanner.title}
+          <h1 className="font-serif-luxury text-2xl sm:text-5xl lg:text-6xl font-medium tracking-tight text-white leading-[1.15]">
+            {formatBannerText(currentBanner.title)}
           </h1>
 
           <p className="text-zinc-300 text-xs sm:text-base md:text-lg font-light leading-relaxed max-w-xl line-clamp-3 sm:line-clamp-none">
@@ -133,12 +151,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
             <button
               id="hero-cta-btn"
               onClick={() => handleCtaClick(currentBanner.linkUrl)}
-              className="group relative inline-flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-3.5 bg-[#C5A059] hover:bg-[#d6b26b] text-black font-bold text-xs sm:text-sm uppercase tracking-[0.2em] rounded-xl overflow-hidden shadow-lg transition-all"
+              className="group relative inline-flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-3.5 bg-[#C5A059] hover:bg-[#d6b26b] text-black font-semibold text-xs sm:text-sm tracking-wider rounded-xl overflow-hidden shadow-lg transition-all"
             >
               <span>
                 {currentBanner.buttonText === 'KOLEKSİYONU KEŞFET' || currentBanner.buttonText === 'İNCELE' || !currentBanner.buttonText
                   ? 'Hemen Satın Al'
-                  : currentBanner.buttonText}
+                  : formatBannerText(currentBanner.buttonText)}
               </span>
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
             </button>
@@ -147,10 +165,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               <button
                 id="hero-admin-edit-btn"
                 onClick={onOpenAdminBanners}
-                className="inline-flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 glass-panel hover:bg-white/10 text-zinc-200 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all"
+                className="inline-flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 glass-panel hover:bg-white/10 text-zinc-200 text-xs font-semibold tracking-wide rounded-xl transition-all"
               >
                 <PlusCircle className="w-4 h-4 text-[#C5A059]" />
-                <span>Bannerları Yönet ({displayBanners.length})</span>
+                <span>Banner'ları Yönet ({displayBanners.length})</span>
               </button>
             )}
           </div>

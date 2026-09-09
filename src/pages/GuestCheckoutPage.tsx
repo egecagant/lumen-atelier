@@ -614,7 +614,7 @@ export const GuestCheckoutPage: React.FC = () => {
                       <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3 animate-in fade-in">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-zinc-300 mb-1">Şirket / Firma Ünvanı *</label>
+                            <label className="block text-zinc-300 mb-1">Şirket / Firma Unvanı *</label>
                             <input
                               type="text"
                               required={address.invoiceType === 'corporate'}

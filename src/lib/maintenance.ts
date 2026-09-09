@@ -1,5 +1,5 @@
 // true yapıldığında tüm site bakım ekranı gösterir.
-export const MAINTENANCE_MODE = true;
+export const MAINTENANCE_MODE = false;
 
 // Bu e-postayla giriş yapmış kullanıcılar bakım modunda da siteyi normal görür,
 // böylece sen test edebilirsin.

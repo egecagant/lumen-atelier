@@ -15,11 +15,13 @@ import {
   HelpCircle, 
   ChevronDown,
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  MessageCircle
 } from 'lucide-react';
 import { SEO } from '../components/SEO';
 import { db, COLLECTIONS, addDoc, collection } from '../lib/firebase';
 import { useSiteSettings } from '../context/SiteSettingsContext';
+import { COMPANY } from '../lib/companyInfo';
 import { ContactMessage } from '../types';
 
 export const CustomDesignPage: React.FC = () => {
@@ -396,13 +398,17 @@ export const CustomDesignPage: React.FC = () => {
                       <MapPin className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">Showroom</span>
-                      <p className="text-zinc-300 font-medium text-xs truncate">{settings.contactAddressText || 'Nişantaşı / İstanbul'}</p>
+                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">
+                        {settings.contactAddressTitle || 'Showroom & Merkez'}
+                      </span>
+                      <p className="text-zinc-300 font-medium text-xs truncate" title={settings.contactAddressText || COMPANY.address}>
+                        {settings.contactAddressText || COMPANY.address}
+                      </p>
                     </div>
                   </div>
 
                   <a 
-                    href={`mailto:${settings.contactEmailText || 'hello@lumenlatelier.com'}`}
+                    href={`mailto:${settings.contactEmailText || COMPANY.email}`}
                     className="flex items-center gap-2.5 bento-card p-2.5 sm:p-3 rounded-xl hover:border-[#C5A059]/50 transition-colors"
                   >
                     <div className="p-1.5 rounded-lg bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0">
@@ -410,20 +416,26 @@ export const CustomDesignPage: React.FC = () => {
                     </div>
                     <div className="min-w-0">
                       <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">E-Posta</span>
-                      <p className="text-zinc-300 font-medium text-xs truncate">{settings.contactEmailText || 'hello@lumenlatelier.com'}</p>
+                      <p className="text-zinc-300 font-medium text-xs truncate">{settings.contactEmailText || COMPANY.email}</p>
                     </div>
                   </a>
 
                   <a 
-                    href={`tel:${(settings.contactPhoneText || '+902128402025').replace(/\s+/g, '')}`}
-                    className="flex items-center gap-2.5 bento-card p-2.5 sm:p-3 rounded-xl hover:border-[#C5A059]/50 transition-colors"
+                    href={COMPANY.whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 bento-card p-2.5 sm:p-3 rounded-xl hover:border-[#25D366]/50 transition-colors group cursor-pointer"
                   >
-                    <div className="p-1.5 rounded-lg bg-black/60 border border-[#C5A059]/30 text-[#C5A059] flex-shrink-0">
-                      <Phone className="w-3.5 h-3.5" />
+                    <div className="p-1.5 rounded-lg bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] flex-shrink-0 group-hover:scale-110 transition-transform">
+                      <MessageCircle className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">Telefon & WhatsApp</span>
-                      <p className="text-zinc-300 font-medium text-xs truncate">{settings.contactPhoneText || '+90 (212) 840 20 25'}</p>
+                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">
+                        {settings.contactPhoneTitle || 'Müşteri Hattı & WhatsApp'}
+                      </span>
+                      <p className="text-zinc-300 font-medium text-xs truncate group-hover:text-emerald-400 transition-colors">
+                        {settings.contactPhoneText || COMPANY.phone}
+                      </p>
                     </div>
                   </a>
                 </div>

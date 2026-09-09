@@ -37,7 +37,7 @@ export const SAMPLE_CATEGORIES: Omit<Category, 'id'>[] = [
 
 export const SAMPLE_BANNERS: Omit<HeroBanner, 'id'>[] = [
   {
-    title: 'ASTRONOT KOZMİK ÇOCUK MASA LAMBASI',
+    title: 'Astronot Kozmik Çocuk Masa Lambası',
     subtitle: 'Göz dostu sıcak LED aydınlatma ve masalsı heykelsi astronot tasarımı.',
     buttonText: 'Hemen Satın Al',
     linkUrl: '#koleksiyon',
@@ -47,7 +47,7 @@ export const SAMPLE_BANNERS: Omit<HeroBanner, 'id'>[] = [
     createdAt: Date.now() - 100000
   },
   {
-    title: 'AURA KOLEKSİYONU: DOKUNMATİK AMBİYANS',
+    title: 'Aura Koleksiyonu: Dokunmatik Ambiyans',
     subtitle: 'Minimalist geometrik hatlar, 3 kademeli sıcak ışık modu ve kablosuz lüks.',
     buttonText: 'Hemen Satın Al',
     linkUrl: '#koleksiyon',
@@ -57,7 +57,7 @@ export const SAMPLE_BANNERS: Omit<HeroBanner, 'id'>[] = [
     createdAt: Date.now() - 90000
   },
   {
-    title: 'ÇOCUK ODALARI İÇİN MASALSI AYDINLIK',
+    title: 'Çocuk Odaları İçin Masalsı Aydınlık',
     subtitle: 'Göz dostu difüzyon lensi ve sıcak dostane formlarla tasarlanmış çocuk lambaları.',
     buttonText: 'Hemen Satın Al',
     linkUrl: '#koleksiyon',

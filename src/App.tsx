@@ -656,21 +656,9 @@ function MainApp() {
         />
         <Route path="/cerezler" element={<Navigate to="/cerez-politikasi" replace />} />
 
-        {/* KVKK Veri Sahibi Başvuru Formu */}
-        <Route
-          path="/kvkk-basvuru"
-          element={
-            <StoreLayout
-              categories={categories}
-              onOpenAuth={() => openAuthModal()}
-              onOpenSearch={() => setIsSearchOpen(true)}
-              isAdmin={isAdmin}
-            >
-              <KvkkApplicationPage />
-            </StoreLayout>
-          }
-        />
-        <Route path="/veri-sahibi-basvuru" element={<Navigate to="/kvkk-basvuru" replace />} />
+        {/* KVKK Veri Sahibi Başvuru Formu (Gizlilik ve KVKK Politikası İçine Gömülü) */}
+        <Route path="/kvkk-basvuru" element={<Navigate to="/gizlilik-politikasi#kvkk-basvuru" replace />} />
+        <Route path="/veri-sahibi-basvuru" element={<Navigate to="/gizlilik-politikasi#kvkk-basvuru" replace />} />
 
         {/* Web Sitesi Kullanım Koşulları */}
         <Route
@@ -816,7 +804,6 @@ function MainApp() {
 
       {/* Cookie Consent Banner (Active when ANALYTICS_ENABLED is true) */}
       <CookieConsent analyticsEnabled={ANALYTICS_ENABLED} />
-
     </div>
   );
 }

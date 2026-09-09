@@ -943,7 +943,7 @@ export const ContentEditor: React.FC = () => {
                 <label className="block text-xs text-zinc-400 mb-1.5">KDV Notu</label>
                 <input
                   type="text"
-                  value={formData.productDetailTaxIncludedText || 'KDV Dahil'}
+                  value={formData.productDetailTaxIncludedText || 'KDV Dâhil'}
                   onChange={(e) => handleChange('productDetailTaxIncludedText', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-[#C5A059]"
                 />
@@ -1195,7 +1195,7 @@ export const ContentEditor: React.FC = () => {
                   value={formData.contactAddressText}
                   onChange={(e) => handleChange('contactAddressText', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-zinc-300 focus:outline-none focus:border-[#C5A059]"
-                  placeholder="Abdi İpekçi Caddesi No: 42, Nişantaşı / İstanbul"
+                  placeholder="Yenimahalle Mah. Teyyareci Sadık Sok. No:50 A, 34142 Bakırköy / İstanbul"
                 />
               </div>
 
@@ -1235,7 +1235,7 @@ export const ContentEditor: React.FC = () => {
                   value={formData.contactPhoneText}
                   onChange={(e) => handleChange('contactPhoneText', e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-zinc-300 focus:outline-none focus:border-[#C5A059]"
-                  placeholder="+90 (212) 840 20 25"
+                  placeholder="+90 537 267 53 86"
                 />
               </div>
             </div>

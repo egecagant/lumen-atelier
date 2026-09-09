@@ -442,7 +442,7 @@ export const PreliminaryInfoFormPage: React.FC = () => {
               • <strong>İade Taşıyıcısı ve Masrafı:</strong> İade işlemlerinde öngörülen taşıyıcı <strong>{COMPANY.carrier}</strong>'dur. Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince <strong>iade kargo bedeli ALICI'ya aittir</strong>. Ancak teslim anında hasarlı veya ayıplı olduğu tutanakla tespit edilen ürünlerin iade kargo masrafı SATICI'ya aittir.
             </p>
             <p>
-              • <strong>Cayma Hakkının Geçerli Olmadığı Haller:</strong> Alıcının özel talepleri doğrultusunda üretilen kişiye özel (bespoke) veya üzerinde değişiklik yapılan lambalarda cayma hakkı kullanılamaz.
+              • <strong>Cayma Hakkının Geçerli Olmadığı Haller:</strong> Alıcı'nın özel talepleri doğrultusunda üretilen kişiye özel (bespoke) veya üzerinde değişiklik yapılan lambalarda cayma hakkı kullanılamaz.
             </p>
           </div>
         </div>
@@ -491,7 +491,7 @@ Tüketicinin E-Posta Adresi: [E-Posta Adresiniz]
 Geri Ödeme Yapılacak IBAN (Havale ile ödendiyse): [TR...]
 
 Tarih: ${new Date().toLocaleDateString('tr-TR')}
-İmza (Yalnızca kağıt ortamında gönderilirse):`;
+İmza (Yalnızca kâğıt ortamında gönderilirse):`;
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(sampleTemplate);
@@ -648,7 +648,137 @@ export const DeliveryAndReturnPage: React.FC = () => {
   );
 };
 
-// 6. /gizlilik-politikasi - KVKK Aydınlatma Metni
+// 6. /gizlilik-politikasi - KVKK Aydınlatma Metni & Veri Sahibi Başvuru Rehberi
+export const KvkkApplicationSection: React.FC = () => {
+  const [copied, setCopied] = useState(false);
+  const [selectedDemands, setSelectedDemands] = useState<string[]>([
+    'Kişisel verilerimin işlenip işlenmediğini öğrenmek istiyorum.'
+  ]);
+
+  const demandOptions = [
+    'Kişisel verilerimin işlenip işlenmediğini öğrenmek istiyorum.',
+    'Kişisel verilerim işlenmişse buna ilişkin bilgi talep ediyorum.',
+    'Kişisel verilerimin işlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenmek istiyorum.',
+    'Yurt içinde veya yurt dışında kişisel verilerimin aktarıldığı üçüncü kişileri bilmek istiyorum.',
+    'Kişisel verilerimin eksik veya yanlış işlenmiş olması hâlinde bunların düzeltilmesini talep ediyorum.',
+    'KVKK m.7 uyarınca kişisel verilerimin silinmesini veya yok edilmesini talep ediyorum.',
+    'Düzeltme ve silme işlemlerinin kişisel verilerimin aktarıldığı üçüncü kişilere bildirilmesini istiyorum.',
+    'İşlenen verilerin münhasıran otomatik sistemler vasıtasıyla analiz edilmesi suretiyle aleyhime bir sonucun ortaya çıkmasına itiraz ediyorum.'
+  ];
+
+  const toggleDemand = (opt: string) => {
+    setSelectedDemands(prev => 
+      prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]
+    );
+  };
+
+  const petitionTemplate = `6698 SAYILI KANUN KAPSAMINDA İLGİLİ KİŞİ (VERİ SAHİBİ) BAŞVURU DİLEKÇESİ
+
+Kime: ${COMPANY.legalName} (${COMPANY.brandName})
+E-Posta: ${COMPANY.email}
+Adres: ${COMPANY.address}
+
+6698 sayılı Kişisel Verilerin Korunması Kanunu’nun 11. maddesi kapsamındaki haklarımı kullanmak üzere veri sorumlusu sıfatıyla tarafınıza başvurmaktayım.
+
+1. BAŞVURU SAHİBİ BİLGİLERİ:
+Adı ve Soyadı: [Adınız Soyadınız]
+T.C. Kimlik No veya Sipariş No: [TC No veya Sipariş Numaranız]
+Tebligata Esas Adres: [Açık Adresiniz]
+E-Posta Adresi: [Kayıtlı E-Posta Adresiniz]
+Telefon Numarası: [Telefon Numaranız]
+
+2. TALEP KONUSU (İşaretlenen Maddeler):
+${selectedDemands.map(d => `• ${d}`).join('\n')}
+
+3. AÇIKLAMALAR (Varsa ek detaylar):
+[Talebinize ilişkin ek detayları buraya yazabilirsiniz.]
+
+Yukarıda belirttiğim taleplerimin KVKK’nın 13. maddesi uyarınca incelenerek en geç 30 (otuz) gün içinde tarafıma yazılı veya elektronik ortamda yanıtlanmasını arz ederim.
+
+Tarih: ${new Date().toLocaleDateString('tr-TR')}
+Başvuru Sahibi Adı Soyadı: [Adınız Soyadınız]
+İmza:`;
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(petitionTemplate);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <div id="kvkk-basvuru" className="mt-4 p-5 rounded-2xl bg-zinc-50 border border-zinc-200 text-zinc-800 space-y-4">
+      <div className="flex items-center gap-2">
+        <FileText className="w-4 h-4 text-[#9E7B36]" />
+        <h3 className="font-serif-luxury text-base text-zinc-900 font-semibold">
+          İlgili Kişi (Veri Sahibi) Başvuru Rehberi ve Dilekçe Şablonu
+        </h3>
+      </div>
+
+      <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+        6698 sayılı KVKK’nın 11. maddesi kapsamındaki taleplerinizi (silme, düzeltme, bilgi alma vb.) aşağıdaki şablonu kullanarak doğrudan bize iletebilirsiniz:
+      </p>
+
+      <div className="p-3.5 rounded-xl bg-white border border-zinc-200 text-xs text-zinc-700 space-y-1">
+        <p className="font-semibold text-zinc-900">📬 Başvuru İletişim:</p>
+        <p>
+          Dilekçenizi sistemimize kayıtlı e-posta adresiniz üzerinden <strong>{COMPANY.email}</strong> adresine gönderebilirsiniz. Başvurularınız KVKK m.13 uyarınca <strong>en geç 30 gün içinde</strong> ücretsiz sonuçlandırılacaktır.
+        </p>
+      </div>
+
+      {/* Talep Seçimi */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-zinc-900">Talep Konularını Seçiniz:</p>
+        <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-zinc-200">
+          {demandOptions.map((opt, i) => {
+            const checked = selectedDemands.includes(opt);
+            return (
+              <label key={i} className="flex items-start gap-2.5 text-xs cursor-pointer select-none py-1">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleDemand(opt)}
+                  className="mt-0.5 rounded border-zinc-300 text-[#9E7B36] focus:ring-0"
+                />
+                <span className={checked ? 'text-zinc-900 font-medium' : 'text-zinc-600'}>
+                  {opt}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Dilekçe Metni */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-zinc-900">Hazır Başvuru Dilekçesi:</span>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-all cursor-pointer shadow-sm active:scale-95"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Kopyalandı!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Dilekçeyi Kopyala</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <pre className="font-mono text-[11px] sm:text-xs text-zinc-700 whitespace-pre-wrap leading-relaxed bg-white p-4 rounded-xl border border-zinc-200 select-all max-h-56 overflow-y-auto">
+          {petitionTemplate}
+        </pre>
+      </div>
+    </div>
+  );
+};
+
 export const PrivacyPolicyPage: React.FC = () => {
   return (
     <LegalShell 
@@ -742,11 +872,12 @@ export const PrivacyPolicyPage: React.FC = () => {
 
         <section className="space-y-3">
           <h2 className="text-lg font-serif-luxury font-semibold text-zinc-900">
-            7. KVKK Kapsamındaki Haklarınız ve Başvuru
+            7. KVKK Kapsamındaki Haklarınız ve Veri Sahibi Başvuru Usulü
           </h2>
           <p className="text-xs sm:text-sm">
-            KVKK'nın 11. maddesi uyarınca kişisel verilerinizin işlenip işlenmediğini öğrenme, silinmesini veya düzeltilmesini talep etme hakkına sahipsiniz. Başvuru usulü için <Link to="/kvkk-basvuru" className="text-[#9E7B36] font-semibold underline">Veri Sahibi Başvuru Formu</Link> sayfamızı ziyaret edebilirsiniz. Talepleriniz 30 gün içinde ücretsiz yanıtlanır.
+            KVKK'nın 11. maddesi uyarınca kişisel verilerinizin işlenip işlenmediğini öğrenme, silinmesini veya düzeltilmesini talep etme hakkına sahipsiniz. Talepleriniz 30 gün içinde ücretsiz yanıtlanır. Başvurunuzu aşağıdaki hazır dilekçe şablonunu kullanarak gerçekleştirebilirsiniz:
           </p>
+          <KvkkApplicationSection />
         </section>
       </div>
     </LegalShell>
@@ -849,140 +980,9 @@ export const CookiePolicyPage: React.FC = () => {
   );
 };
 
-// 8. /kvkk-basvuru - Veri Sahibi Başvuru Formu
+// 8. /kvkk-basvuru - Veri Sahibi Başvuru Formu (Gizlilik ve KVKK Politikası içine entegredir)
 export const KvkkApplicationPage: React.FC = () => {
-  const [copied, setCopied] = useState(false);
-  const [selectedDemands, setSelectedDemands] = useState<string[]>([
-    'Kişisel verilerimin işlenip işlenmediğini öğrenmek istiyorum.'
-  ]);
-
-  const demandOptions = [
-    'Kişisel verilerimin işlenip işlenmediğini öğrenmek istiyorum.',
-    'Kişisel verilerim işlenmişse buna ilişkin bilgi talep ediyorum.',
-    'Kişisel verilerimin işlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenmek istiyorum.',
-    'Yurt içinde veya yurt dışında kişisel verilerimin aktarıldığı üçüncü kişileri bilmek istiyorum.',
-    'Kişisel verilerimin eksik veya yanlış işlenmiş olması hâlinde bunların düzeltilmesini talep ediyorum.',
-    'KVKK m.7 uyarınca kişisel verilerimin silinmesini veya yok edilmesini talep ediyorum.',
-    'Düzeltme ve silme işlemlerinin kişisel verilerimin aktarıldığı üçüncü kişilere bildirilmesini istiyorum.',
-    'İşlenen verilerin münhasıran otomatik sistemler vasıtasıyla analiz edilmesi suretiyle aleyhime bir sonucun ortaya çıkmasına itiraz ediyorum.'
-  ];
-
-  const toggleDemand = (opt: string) => {
-    setSelectedDemands(prev => 
-      prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]
-    );
-  };
-
-  const petitionTemplate = `6698 SAYILI KANUN KAPSAMINDA İLGİLİ KİŞİ (VERİ SAHİBİ) BAŞVURU DİLEKÇESİ
-
-Kime: ${COMPANY.legalName} (${COMPANY.brandName})
-E-Posta: ${COMPANY.email}
-Adres: ${COMPANY.address}
-
-6698 sayılı Kişisel Verilerin Korunması Kanunu’nun 11. maddesi kapsamındaki haklarımı kullanmak üzere veri sorumlusu sıfatıyla tarafınıza başvurmaktayım.
-
-1. BAŞVURU SAHİBİ BİLGİLERİ:
-Adı ve Soyadı: [Adınız Soyadınız]
-T.C. Kimlik No veya Sipariş No: [TC No veya Sipariş Numaranız]
-Tebligata Esas Adres: [Açık Adresiniz]
-E-Posta Adresi: [Kayıtlı E-Posta Adresiniz]
-Telefon Numarası: [Telefon Numaranız]
-
-2. TALEP KONUSU (İşaretlenen Maddeler):
-${selectedDemands.map(d => `• ${d}`).join('\n')}
-
-3. AÇIKLAMALAR (Varsa ek detaylar):
-[Talebinize ilişkin ek detayları buraya yazabilirsiniz.]
-
-Yukarıda belirttiğim taleplerimin KVKK’nın 13. maddesi uyarınca incelenerek en geç 30 (otuz) gün içinde tarafıma yazılı veya elektronik ortamda yanıtlanmasını arz ederim.
-
-Tarih: ${new Date().toLocaleDateString('tr-TR')}
-Başvuru Sahibi Adı Soyadı: [Adınız Soyadınız]
-İmza:`;
-
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(petitionTemplate);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
-
-  return (
-    <LegalShell 
-      title="Veri Sahibi Başvuru Formu"
-      subtitle="6698 sayılı KVKK’nın 11. maddesi kapsamındaki haklarınızı kullanmanız için başvuru rehberi ve şablonu."
-      badge="KVKK m.11 Başvurusu"
-    >
-      <div className="space-y-6">
-        <p className="text-xs sm:text-sm leading-relaxed">
-          6698 sayılı Kişisel Verilerin Korunması Kanunu'nun (“KVKK”) 11. maddesi uyarınca veri sahipleri, veri sorumlusuna başvurarak kendileriyle ilgili kişisel verilerin işlenmesine ilişkin çeşitli haklara sahiptir.
-        </p>
-
-        <div className="p-4 rounded-xl bg-zinc-100 border border-zinc-200 text-xs sm:text-sm space-y-1.5">
-          <p className="font-semibold text-zinc-900">📬 Başvuru Usulü ve İletişim:</p>
-          <p>
-            Dilekçenizi sistemimize kayıtlı e-posta adresiniz üzerinden <strong>{COMPANY.email}</strong> adresine gönderebilirsiniz. Başvurularınız KVKK m.13 uyarınca <strong>en geç 30 gün içinde</strong> ücretsiz olarak sonuçlandırılacaktır.
-          </p>
-        </div>
-
-        {/* Seçilebilir Talep Türleri */}
-        <section className="space-y-3 pt-2">
-          <h3 className="font-serif-luxury text-base text-zinc-900 font-semibold">
-            1. Talep Türünüzü Seçiniz:
-          </h3>
-          <p className="text-xs text-zinc-500">
-            Aşağıdaki kutuları işaretleyerek dilekçe şablonunu anında ihtiyaçlarınıza göre oluşturabilirsiniz:
-          </p>
-          <div className="space-y-2 bg-white p-4 rounded-xl border border-zinc-200">
-            {demandOptions.map((opt, i) => {
-              const checked = selectedDemands.includes(opt);
-              return (
-                <label key={i} className="flex items-start gap-3 text-xs sm:text-sm cursor-pointer select-none py-1">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleDemand(opt)}
-                    className="mt-1 rounded border-zinc-300 text-[#9E7B36] focus:ring-0"
-                  />
-                  <span className={checked ? 'text-zinc-900 font-medium' : 'text-zinc-600'}>
-                    {opt}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Dilekçe Şablonu Kopyalama */}
-        <section className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif-luxury text-base text-zinc-900 font-semibold">
-              2. Oluşturulan Başvuru Metni:
-            </h3>
-            <button
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-all cursor-pointer shadow-sm active:scale-95"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Şablon Kopyalandı!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Şablonu Kopyala</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          <pre className="font-mono text-xs sm:text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed bg-zinc-50 p-4 rounded-xl border border-zinc-200/80 select-all overflow-x-auto">
-            {petitionTemplate}
-          </pre>
-        </section>
-      </div>
-    </LegalShell>
-  );
+  return <PrivacyPolicyPage />;
 };
 
 // 9. /kullanim-kosullari - Kullanım Koşulları
