@@ -455,30 +455,28 @@ async function startServer() {
     crossOriginEmbedderPolicy: false
   }));
 
-  // CORS configuration allowing Cloudflare frontend domain and local/cloud-run environments
+  // CORS configuration allowing production domains and explicit dev/preview origins
   const allowedOrigins = [
     'https://lumenlatelier.com',
     'https://www.lumenlatelier.com',
     'https://lumenatelier.com',
     'https://www.lumenatelier.com',
+    'https://ais-dev-uweusehq6santj6vtwicl6-785191501269.europe-west2.run.app',
+    'https://ais-pre-uweusehq6santj6vtwicl6-785191501269.europe-west2.run.app',
+    'https://lumen-atelier-l-ks-tasar-m-lambalar-249118670815.us-west1.run.app',
     'http://localhost:3000',
     'http://localhost:5173'
   ];
 
   app.use(cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or same-origin server requests)
+      // Allow requests with no origin (like mobile apps, curl, server-to-server or same-origin requests)
       if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.run.app') ||
-        origin.endsWith('.ai.studio') ||
-        origin.endsWith('.web.app') ||
-        origin.endsWith('.firebaseapp.com')
-      ) {
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS policy: "${origin}" is not an authorized origin.`));
+      // Cleanly deny unauthorized origins without throwing 500 server error
+      return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
@@ -620,23 +618,16 @@ async function startServer() {
     }
   });
 
-  // Health check endpoint
+  // Health check endpoint (simplified for production without leaking internal configuration)
   app.get('/api/health', (req, res) => {
-    res.json({
-      status: 'ok',
-      service: 'LUMEN L\'atelier Engine',
-      hasApiKey: !!process.env.IYZICO_API_KEY,
-      hasResendKey: isResendConfigured(),
-      fromEmail: process.env.RESEND_FROM_EMAIL || 'LUMEN <siparis@lumenlatelier.com>',
-      time: new Date().toISOString()
-    });
+    res.json({ status: 'ok' });
   });
 
-  // Admin test email endpoint to check Resend configuration (Protected by ADMIN_SECRET_KEY)
+  // Admin test email endpoint to check Resend configuration (Strictly protected by ADMIN_SECRET_KEY via header)
   app.post('/api/admin/resend/test', async (req, res) => {
     try {
       const adminSecret = process.env.ADMIN_SECRET_KEY;
-      const providedKey = req.headers['x-admin-key'] || req.query.key;
+      const providedKey = req.headers['x-admin-key'];
 
       if (!adminSecret || providedKey !== adminSecret) {
         return res.status(401).json({
@@ -820,28 +811,6 @@ async function startServer() {
   app.get('/api/feeds/google-merchant.xml', handleGoogleMerchantFeed);
   app.get('/feeds/google-merchant.xml', handleGoogleMerchantFeed);
   app.get('/google-merchant.xml', handleGoogleMerchantFeed);
-
-  // JSON summary of feed for diagnostic testing
-  app.get('/api/feeds/google-merchant.json', async (req, res) => {
-    try {
-      const baseUrl = getBaseAppUrl(req);
-      const db = getDb();
-      const snap = await db.collection('products').get();
-      const productsList: any[] = [];
-      snap.forEach(docSnap => {
-        productsList.push({ id: docSnap.id, ...docSnap.data() });
-      });
-
-      res.json({
-        status: 'ok',
-        count: productsList.length,
-        feedUrl: `${baseUrl}/api/feeds/google-merchant.xml`,
-        products: productsList
-      });
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
 
   // 1. Direct Server-Side Order Creation (e.g. Bank Transfer / EFT)
   // Securely creates orders via Firebase Web SDK with validated order payload
