@@ -38,7 +38,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useCoupons } from '../context/CouponContext';
 import { formatCurrency, formatDate } from '../lib/format';
-import { getApiUrl } from '../lib/api';
+import { getApiUrl, formatApiErrorMessage } from '../lib/api';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
 import { SEO } from '../components/SEO';
@@ -456,7 +456,8 @@ export const CheckoutPage: React.FC = () => {
         }
       } catch (err: any) {
         console.error('iyzico start error:', err);
-        alert(err.message || 'Ödeme oturumu başlatılırken bir hata oluştu. Lütfen tekrar deneyiniz.');
+        const userFriendlyMessage = formatApiErrorMessage(err);
+        alert(userFriendlyMessage);
         setLoading(false);
         return;
       }

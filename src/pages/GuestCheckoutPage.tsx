@@ -33,7 +33,7 @@ import { useCoupons } from '../context/CouponContext';
 import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
-import { getApiUrl } from '../lib/api';
+import { getApiUrl, formatApiErrorMessage } from '../lib/api';
 import { SEO } from '../components/SEO';
 import { COMPANY } from '../lib/companyInfo';
 
@@ -266,7 +266,8 @@ export const GuestCheckoutPage: React.FC = () => {
         }
       } catch (err: any) {
         console.error('Payment start error:', err);
-        alert(err.message || 'Ödeme başlatılırken bir hata oluştu. Lütfen tekrar deneyiniz.');
+        const friendlyMsg = formatApiErrorMessage(err);
+        alert(friendlyMsg);
         setLoading(false);
         return;
       }

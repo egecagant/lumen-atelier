@@ -22,7 +22,7 @@ import { useCoupons } from '../context/CouponContext';
 import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { Order, OrderAddress, Product } from '../types';
-import { getApiUrl } from '../lib/api';
+import { getApiUrl, formatApiErrorMessage } from '../lib/api';
 
 interface IyzicoCheckoutModalProps {
   isOpen: boolean;
@@ -234,7 +234,8 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
 
     } catch (err: any) {
       console.error('iyzico payment start error:', err);
-      setErrorMessage(err.message || 'Ödeme oturumu başlatılırken bir sorun oluştu. Lütfen tekrar deneyiniz.');
+      const friendlyMessage = formatApiErrorMessage(err);
+      setErrorMessage(friendlyMessage);
       setLoading(false);
     }
   };
