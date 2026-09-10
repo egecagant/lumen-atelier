@@ -124,6 +124,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressFormError, setAddressFormError] = useState<string | null>(null);
 
+  // Helper to prevent non-digit keys in number-only inputs
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+      (e.ctrlKey || e.metaKey)
+    ) {
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   // Orders State
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -763,10 +776,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <div className="relative">
                       <input
                         type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={11}
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="0532 123 45 67 veya +90 532..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-100 focus:border-[#C5A059] focus:outline-none"
+                        onKeyDown={handleNumericKeyDown}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                        placeholder="05XX XXX XX XX"
+                        className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-100 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                       />
                       <Phone className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     </div>
@@ -1175,10 +1192,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <input
                   type="tel"
                   required
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={11}
                   value={addressPhone}
-                  onChange={(e) => setAddressPhone(e.target.value)}
-                  placeholder="0532 000 00 00"
-                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-zinc-100 focus:border-[#C5A059] focus:outline-none"
+                  onKeyDown={handleNumericKeyDown}
+                  onChange={(e) => setAddressPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  placeholder="05XX XXX XX XX"
+                  className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-zinc-100 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                 />
               </div>
 
@@ -1219,10 +1240,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={5}
                     value={addressPostalCode}
-                    onChange={(e) => setAddressPostalCode(e.target.value)}
+                    onKeyDown={handleNumericKeyDown}
+                    onChange={(e) => setAddressPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
                     placeholder="34353"
-                    className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-zinc-100 focus:border-[#C5A059] focus:outline-none"
+                    className="w-full px-3.5 py-2.5 bg-black/50 border border-white/10 rounded-xl text-zinc-100 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                   />
                 </div>
               </div>

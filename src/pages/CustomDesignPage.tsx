@@ -58,6 +58,18 @@ export const CustomDesignPage: React.FC = () => {
     }
   }, [location.search]);
 
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+      (e.ctrlKey || e.metaKey)
+    ) {
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) return;
@@ -333,10 +345,14 @@ export const CustomDesignPage: React.FC = () => {
                           </label>
                           <input
                             type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={11}
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            placeholder="+90 532 000 0000"
-                            className="w-full px-3.5 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none"
+                            onKeyDown={handleNumericKeyDown}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+                            placeholder="05XX XXX XX XX"
+                            className="w-full px-3.5 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                           />
                         </div>
 

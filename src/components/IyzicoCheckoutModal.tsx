@@ -68,6 +68,19 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Helper to prevent non-digit keys in number-only inputs
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+      (e.ctrlKey || e.metaKey)
+    ) {
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   // Address Form State
   const [address, setAddress] = useState<OrderAddress>({
     fullName: user?.displayName || '',
@@ -374,10 +387,17 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
                   <input
                     type="tel"
                     required
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={11}
                     value={address.phone}
-                    onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-                    placeholder="+90 555 000 0000"
-                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none"
+                    onKeyDown={handleNumericKeyDown}
+                    onChange={(e) => {
+                      const numericVal = e.target.value.replace(/\D/g, '').slice(0, 11);
+                      setAddress({ ...address, phone: numericVal });
+                    }}
+                    placeholder="05XX XXX XX XX"
+                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                   />
                 </div>
 
@@ -429,10 +449,17 @@ export const IyzicoCheckoutModal: React.FC<IyzicoCheckoutModalProps> = ({
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={5}
                     value={address.postalCode}
-                    onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+                    onKeyDown={handleNumericKeyDown}
+                    onChange={(e) => {
+                      const numericVal = e.target.value.replace(/\D/g, '').slice(0, 5);
+                      setAddress({ ...address, postalCode: numericVal });
+                    }}
                     placeholder="34367"
-                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none"
+                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                   />
                 </div>
               </div>

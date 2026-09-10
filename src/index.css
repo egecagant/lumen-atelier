@@ -97,23 +97,53 @@
   border-color: #C5A059;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Custom Scrollbar - Only active on Desktop with fine mouse pointer */
+@media (min-width: 769px) and (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0A0A0A;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C5A059;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: #0A0A0A;
+/* Hide scrollbar completely on mobile and touch devices */
+@media (max-width: 768px), (pointer: coarse) {
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+  }
+
+  html, body, div, section, main, article, ul, ol, nav, aside {
+    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: none !important; /* Firefox */
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 3px;
+/* Reusable utility class to hide scrollbar anywhere */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #C5A059;
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Crisp Matte Shadow Utilities */

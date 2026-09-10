@@ -105,6 +105,19 @@ export const GuestCheckoutPage: React.FC = () => {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [step, setStep] = useState<'checkout' | 'success'>('checkout');
 
+  // Helper to prevent non-digit keys in number-only inputs
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+      (e.ctrlKey || e.metaKey)
+    ) {
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   // Calculations
   const shippingCost = (currentSubtotal - discountAmount > 5000 || currentSubtotal === 0) ? 0 : 250;
   const paymentDiscount = paymentMethod === 'bank_transfer' ? Math.round((currentSubtotal - discountAmount) * 0.03) : 0;
@@ -500,10 +513,17 @@ export const GuestCheckoutPage: React.FC = () => {
                       <input
                         type="tel"
                         required
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={11}
                         value={address.phone}
-                        onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-                        placeholder="+90 (555) 000 00 00"
-                        className="w-full pl-10 pr-4 py-3 bg-black/40 border border-white/15 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none transition-colors"
+                        onKeyDown={handleNumericKeyDown}
+                        onChange={(e) => {
+                          const numericVal = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          setAddress({ ...address, phone: numericVal });
+                        }}
+                        placeholder="05XX XXX XX XX"
+                        className="w-full pl-10 pr-4 py-3 bg-black/40 border border-white/15 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none transition-colors font-mono tracking-wider"
                       />
                       <Phone className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     </div>
@@ -588,10 +608,17 @@ export const GuestCheckoutPage: React.FC = () => {
                       </label>
                       <input
                         type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={5}
                         value={address.postalCode}
-                        onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+                        onKeyDown={handleNumericKeyDown}
+                        onChange={(e) => {
+                          const numericVal = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          setAddress({ ...address, postalCode: numericVal });
+                        }}
                         placeholder="34367"
-                        className="w-full px-4 py-3 bg-black/40 border border-white/15 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
+                        className="w-full px-4 py-3 bg-black/40 border border-white/15 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                       />
                     </div>
 
@@ -670,29 +697,22 @@ export const GuestCheckoutPage: React.FC = () => {
                             <input
                               type="text"
                               required={address.invoiceType === 'corporate'}
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={10}
                               value={address.taxNumber}
-                              onChange={(e) => setAddress({ ...address, taxNumber: e.target.value })}
+                              onKeyDown={handleNumericKeyDown}
+                              onChange={(e) => {
+                                const numericVal = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                setAddress({ ...address, taxNumber: numericVal });
+                              }}
                               placeholder="10 Haneli Vergi Kimlik No"
-                              className="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-zinc-200 focus:border-[#C5A059] focus:outline-none"
+                              className="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-zinc-200 focus:border-[#C5A059] focus:outline-none font-mono tracking-wider"
                             />
                           </div>
                         </div>
                       </div>
                     )}
-                  </div>
-
-                  {/* Order Note */}
-                  <div className="pt-2">
-                    <label className="block uppercase tracking-wider text-zinc-400 mb-1.5 font-medium">
-                      Sipariş & Teslimat Notu (İsteğe Bağlı)
-                    </label>
-                    <input
-                      type="text"
-                      value={address.orderNote}
-                      onChange={(e) => setAddress({ ...address, orderNote: e.target.value })}
-                      placeholder="Örn: Zili çalmayınız, güvenliğe bırakabilirsiniz veya özel hediye paketi rica ederim."
-                      className="w-full px-4 py-3 bg-black/40 border border-white/15 rounded-xl text-zinc-200 focus:border-[#C5A059] focus:outline-none"
-                    />
                   </div>
                 </div>
               </div>
@@ -724,8 +744,8 @@ export const GuestCheckoutPage: React.FC = () => {
                   >
                     <div className="flex items-center justify-between w-full">
                       <CreditCard className={`w-5 h-5 ${paymentMethod === 'iyzico' ? 'text-[#C5A059]' : 'text-zinc-500'}`} />
-                      <div className="flex items-center gap-1.5 opacity-85">
-                        <img src="/payment/iyzico.svg" alt="iyzico" className="h-3 w-auto object-contain" />
+                      <div className="flex items-center gap-1.5 opacity-90">
+                        <img src="/payment/iyzico-ile-ode-white.svg" alt="iyzico ile Öde" className="h-3.5 w-auto object-contain" />
                         <img src="/payment/visa.svg" alt="Visa" className="h-3.5 w-auto object-contain" />
                         <img src="/payment/mastercard.svg" alt="Mastercard" className="h-3.5 w-auto object-contain" />
                       </div>
@@ -1011,9 +1031,9 @@ export const GuestCheckoutPage: React.FC = () => {
                   <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
                     <span className="text-zinc-500">Güvenli Kart Altyapısı</span>
                     <div className="flex items-center gap-2">
-                      <img src="/payment/iyzico.svg" alt="iyzico" className="h-3.5 w-auto object-contain opacity-90" />
-                      <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-75" />
-                      <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-75" />
+                      <img src="/payment/iyzico-ile-ode-white.svg" alt="iyzico ile Öde" className="h-4 w-auto object-contain opacity-95" />
+                      <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-80" />
+                      <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-80" />
                     </div>
                   </div>
                 </div>

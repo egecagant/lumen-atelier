@@ -153,11 +153,26 @@ export const Footer: React.FC<FooterProps> = () => {
             </p>
 
             {/* Payment Logos Strip */}
-            <div className="pt-1">
-              <div className="flex items-center gap-3">
-                <img src="/payment/iyzico.svg" alt="iyzico" className="h-4 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity" />
-                <img src="/payment/visa.svg" alt="Visa" className="h-4.5 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity" />
-                <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4.5 w-auto object-contain opacity-75 hover:opacity-100 transition-opacity" />
+            <div className="pt-1.5">
+              <div className="flex flex-wrap items-center gap-3">
+                <img 
+                  src="/payment/iyzico-ile-ode-white.svg" 
+                  alt="iyzico ile Öde" 
+                  title="iyzico ile Öde"
+                  className="h-5.5 w-auto object-contain opacity-95 hover:opacity-100 transition-opacity" 
+                />
+                <img 
+                  src="/payment/visa.svg" 
+                  alt="Visa" 
+                  title="Visa"
+                  className="h-4.5 w-auto object-contain opacity-85 hover:opacity-100 transition-opacity" 
+                />
+                <img 
+                  src="/payment/mastercard.svg" 
+                  alt="Mastercard" 
+                  title="Mastercard"
+                  className="h-4.5 w-auto object-contain opacity-85 hover:opacity-100 transition-opacity" 
+                />
               </div>
             </div>
 

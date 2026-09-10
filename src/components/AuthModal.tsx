@@ -49,6 +49,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper to prevent non-digit keys in phone input (+ and digits allowed)
+  const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+      (e.ctrlKey || e.metaKey)
+    ) {
+      return;
+    }
+    // Allow digits and '+' only
+    if (!/^[\d+]$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setError(null);
@@ -580,8 +594,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <input
                         type="tel"
                         required
+                        inputMode="tel"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onKeyDown={handlePhoneKeyDown}
+                        onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, '').slice(0, 15))}
                         placeholder="+90 555 123 4567"
                         className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-zinc-200 focus:border-[#C5A059] focus:outline-none tracking-wider font-mono"
                       />

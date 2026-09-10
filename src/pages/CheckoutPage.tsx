@@ -32,7 +32,9 @@ import {
   Clock,
   Shield,
   Home,
-  CheckCheck
+  CheckCheck,
+  ChevronDown,
+  Copy
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -179,6 +181,29 @@ export const CheckoutPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [step, setStep] = useState<'checkout' | 'success'>('checkout');
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
+  const [copiedIban, setCopiedIban] = useState(false);
+
+  const handleCopyIban = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(COMPANY.bank.iban.replace(/\s+/g, ''));
+      setCopiedIban(true);
+      setTimeout(() => setCopiedIban(false), 2000);
+    }
+  };
+
+  // Helper to prevent non-digit keys in number-only inputs
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+      (e.ctrlKey || e.metaKey)
+    ) {
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
 
   // Financial Calculations
   const shippingThreshold = 5000;
@@ -812,11 +837,10 @@ export const CheckoutPage: React.FC = () => {
           </div>
 
           {/* ============================================================
-              MINIMALIST CENTERED STEP TRACKER (Symbols + Greater-Than Delimiters)
-              "bunu kaldir araya 2 tane buyuktur isareti koy yazi fontunu daha modern olanla degistir aradaki boslugu azalr sepet kargo odeme arasinda"
+              MINIMALIST CENTERED STEP TRACKER (Compact on mobile)
           ============================================================ */}
-          <div className="w-full flex items-center justify-center mb-10 px-4">
-            <div className="inline-flex items-center justify-center gap-3 sm:gap-6 md:gap-8">
+          <div className="w-full flex items-center justify-center mb-5 sm:mb-9 px-2 sm:px-4">
+            <div className="inline-flex items-center justify-center gap-2 sm:gap-6 md:gap-8">
               {stepTabs.map((s, index) => {
                 const isActive = activeTab === s.id;
                 const isCompleted = (s.id === 'cart' && (activeTab === 'shipping' || activeTab === 'payment')) ||
@@ -834,7 +858,7 @@ export const CheckoutPage: React.FC = () => {
                       {/* Circle Icon Badge */}
                       <div className="relative flex items-center justify-center">
                         <div
-                          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border relative shadow-md transition-colors ${
+                          className={`w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border relative shadow-md transition-colors ${
                             isActive
                               ? 'bg-[#C5A059] border-[#E5C378] text-black ring-1 ring-[#C5A059]/40'
                               : isCompleted
@@ -842,40 +866,115 @@ export const CheckoutPage: React.FC = () => {
                               : 'bg-[#111116] border-white/10 text-zinc-400 hover:text-zinc-100 hover:border-white/20'
                           }`}
                         >
-                          <Icon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
 
-                          {/* Completed Checkmark badge (Sarı / Altın Tik Rozeti) */}
+                          {/* Completed Checkmark badge */}
                           {isCompleted && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#C5A059] text-black flex items-center justify-center shadow">
-                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#C5A059] text-black flex items-center justify-center shadow">
+                              <Check className="w-2 h-2 sm:w-2.5 sm:h-2.5 stroke-[3]" />
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Step Title Label - Modern Sans Font */}
-                      <div className="mt-2 flex flex-col items-center text-center">
-                        <span className={`text-[11px] sm:text-xs font-sans tracking-[0.12em] uppercase font-semibold transition-colors ${
+                      {/* Step Title Label */}
+                      <div className="mt-1.5 sm:mt-2 flex flex-col items-center text-center">
+                        <span className={`text-[10px] sm:text-xs font-sans tracking-[0.08em] sm:tracking-[0.12em] uppercase font-semibold transition-colors ${
                           isActive ? 'text-white' : isCompleted ? 'text-zinc-300' : 'text-zinc-500 group-hover:text-zinc-300'
                         }`}>
                           {s.title}
                         </span>
                         {isActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] mt-1" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059] mt-0.5 sm:mt-1" />
                         )}
                       </div>
                     </button>
 
-                    {/* 2 Tane Büyüktür İşareti (Sepet ile Kargo ve Kargo ile Ödeme arasına) */}
+                    {/* Delimiter */}
                     {index < stepTabs.length - 1 && (
-                      <div className="flex items-center -translate-y-2.5 select-none" aria-hidden="true">
-                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-600 shrink-0" />
+                      <div className="flex items-center -translate-y-2 sm:-translate-y-2.5 select-none" aria-hidden="true">
+                        <ChevronRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-zinc-600 shrink-0" />
                       </div>
                     )}
                   </React.Fragment>
                 );
               })}
             </div>
+          </div>
+
+          {/* ============================================================
+              MOBILE COLLAPSIBLE ORDER SUMMARY ACCORDION (Minimal Luxury)
+          ============================================================ */}
+          <div className="lg:hidden mb-4 bg-[#0F0F12] border border-white/10 rounded-2xl overflow-hidden shadow-md">
+            <button
+              type="button"
+              onClick={() => setMobileSummaryOpen(!mobileSummaryOpen)}
+              className="w-full px-4 py-3 flex items-center justify-between text-xs text-zinc-300 hover:bg-white/[0.02] transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2 font-medium">
+                <ShoppingBag className="w-4 h-4 text-[#C5A059]" />
+                <span>Sipariş Özeti ({totalItemCount} Tasarım)</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${mobileSummaryOpen ? 'rotate-180 text-[#C5A059]' : ''}`} />
+              </div>
+              <div className="text-right">
+                <span className="font-serif-luxury font-bold text-sm text-[#C5A059]">
+                  {formatCurrency(finalPayableTotal)}
+                </span>
+              </div>
+            </button>
+
+            {mobileSummaryOpen && (
+              <div className="px-4 pb-4 pt-2 border-t border-white/5 space-y-3 bg-black/40">
+                <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1 divide-y divide-white/5">
+                  {items.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-3 pt-2 first:pt-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-black border border-white/10 overflow-hidden flex-shrink-0">
+                          {item.product.images?.[0] ? (
+                            <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <ShoppingBag className="w-4 h-4 text-zinc-600 m-auto mt-3" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-white font-medium truncate">{item.product.name}</p>
+                          <p className="text-[10px] text-zinc-400 font-mono">{item.quantity} Adet x {formatCurrency(item.product.price)}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-[#C5A059] font-serif-luxury font-semibold whitespace-nowrap">
+                        {formatCurrency(item.product.price * item.quantity)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Compact Breakdown */}
+                <div className="pt-2 border-t border-white/10 space-y-1 text-[11px]">
+                  <div className="flex justify-between text-zinc-400">
+                    <span>Ara Toplam</span>
+                    <span className="font-mono text-zinc-200">{formatCurrency(currentSubtotal)}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Kupon İndirimi</span>
+                      <span className="font-mono">-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
+                  {paymentDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Havale/EFT İndirimi (%3)</span>
+                      <span className="font-mono">-{formatCurrency(paymentDiscount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-zinc-400">
+                    <span>Sigortalı Kargo</span>
+                    <span className={`font-mono ${isFreeShipping ? 'text-emerald-400 font-bold' : 'text-zinc-200'}`}>
+                      {isFreeShipping ? 'Ücretsiz' : '₺250'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ============================================================
@@ -1214,13 +1313,18 @@ export const CheckoutPage: React.FC = () => {
                           <input
                             id="shipping-phone"
                             type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={11}
                             value={address.phone}
+                            onKeyDown={handleNumericKeyDown}
                             onChange={(e) => {
-                              setAddress({ ...address, phone: e.target.value });
+                              const numericVal = e.target.value.replace(/\D/g, '').slice(0, 11);
+                              setAddress({ ...address, phone: numericVal });
                               if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' });
                             }}
                             placeholder="05XX XXX XX XX"
-                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 border rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors ${
+                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 border rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors font-mono tracking-wider ${
                               formErrors.phone ? 'border-rose-500/80 bg-rose-500/5' : 'border-white/10'
                             }`}
                           />
@@ -1314,10 +1418,17 @@ export const CheckoutPage: React.FC = () => {
                         <input
                           id="shipping-postalcode"
                           type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={5}
                           value={address.postalCode}
-                          onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+                          onKeyDown={handleNumericKeyDown}
+                          onChange={(e) => {
+                            const numericVal = e.target.value.replace(/\D/g, '').slice(0, 5);
+                            setAddress({ ...address, postalCode: numericVal });
+                          }}
                           placeholder="34000"
-                          className="w-full px-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors"
+                          className="w-full px-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors font-mono tracking-wider"
                         />
                       </div>
                     </div>
@@ -1422,10 +1533,18 @@ export const CheckoutPage: React.FC = () => {
                               </label>
                               <input
                                 type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={10}
                                 value={address.taxNumber || ''}
-                                onChange={(e) => setAddress({ ...address, taxNumber: e.target.value })}
+                                onKeyDown={handleNumericKeyDown}
+                                onChange={(e) => {
+                                  const numericVal = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                  setAddress({ ...address, taxNumber: numericVal });
+                                  if (formErrors.taxNumber) setFormErrors({ ...formErrors, taxNumber: '' });
+                                }}
                                 placeholder="10 Haneli VKN"
-                                className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-xs text-white"
+                                className="w-full px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-xs text-white font-mono tracking-wider"
                               />
                               {formErrors.taxNumber && (
                                 <p className="text-[11px] text-rose-400 mt-1">{formErrors.taxNumber}</p>
@@ -1434,20 +1553,6 @@ export const CheckoutPage: React.FC = () => {
                           </div>
                         </div>
                       )}
-                    </div>
-
-                    {/* Order / Delivery Note */}
-                    <div className="pt-2">
-                      <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                        Kurye & Sipariş Notu (Opsiyonel)
-                      </label>
-                      <input
-                        type="text"
-                        value={address.orderNote || ''}
-                        onChange={(e) => setAddress({ ...address, orderNote: e.target.value })}
-                        placeholder="Örn: Zile basmayın, güvenliğe bırakılabilir vb."
-                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#C5A059] transition-colors"
-                      />
                     </div>
 
                     {/* Option to save address for member */}
@@ -1497,36 +1602,36 @@ export const CheckoutPage: React.FC = () => {
                 TAB 3: ÖDEME (iyzico 3D Secure, Havale)
             -------------------------------------------------------- */}
             {activeTab === 'payment' && (
-              <section className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-5">
+              <section className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-7 space-y-4 sm:space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
                     <div>
-                      <h2 className="font-serif-luxury text-xl sm:text-2xl text-white flex items-center gap-2.5">
-                        <CreditCard className="w-5 h-5 text-[#C5A059]" />
-                        <span>Ödeme Yöntemi ve Güvenli Onay</span>
+                      <h2 className="font-serif-luxury text-lg sm:text-2xl text-white flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-[#C5A059]" />
+                        <span>Ödeme Yöntemi</span>
                       </h2>
-                      <p className="text-xs text-zinc-400 mt-1 font-light">
-                        Tercih ettiğiniz ödeme yöntemini seçerek siparişinizi onaylayabilirsiniz.
+                      <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 font-light">
+                        Güvenli ödeme altyapısı ile siparişinizi tamamlayın.
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-400">
                       <Lock className="w-3.5 h-3.5 text-[#C5A059]" />
-                      <span>TLS Şifreli 3D Secure Güvenlik</span>
+                      <span>256-Bit TLS • 3D Secure</span>
                     </div>
                   </div>
 
-                  {/* Delivery Address Review Pill */}
-                  <div className="bg-black/40 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-xl bg-white/5 text-[#C5A059] flex-shrink-0 mt-0.5">
-                        <MapPin className="w-4 h-4" />
+                  {/* Delivery Address Review Pill - Minimal */}
+                  <div className="bg-black/40 border border-white/10 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-1.5 rounded-lg bg-white/5 text-[#C5A059] flex-shrink-0">
+                        <MapPin className="w-3.5 h-3.5" />
                       </div>
-                      <div className="text-xs">
-                        <div className="font-semibold text-white flex items-center gap-2">
-                          <span>{address.fullName}</span>
-                          <span className="text-zinc-500 font-normal">({address.phone})</span>
+                      <div className="text-xs min-w-0">
+                        <div className="font-medium text-white flex items-center gap-1.5">
+                          <span className="truncate">{address.fullName}</span>
+                          <span className="text-zinc-500 font-normal text-[11px]">({address.phone})</span>
                         </div>
-                        <p className="text-zinc-400 mt-0.5 font-light line-clamp-1">
+                        <p className="text-zinc-400 text-[11px] font-light truncate">
                           {address.addressLine}, {address.district} / {address.city}
                         </p>
                       </div>
@@ -1535,58 +1640,56 @@ export const CheckoutPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setActiveTab('shipping')}
-                      className="text-xs text-[#C5A059] hover:underline self-start sm:self-auto font-medium"
+                      className="text-xs text-[#C5A059] hover:underline flex-shrink-0 font-medium cursor-pointer"
                     >
-                      Adresi Değiştir
+                      Değiştir
                     </button>
                   </div>
 
-                  {/* Payment Method Cards */}
-                  <div className="space-y-3">
-                    <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                  {/* Payment Method Cards - Clean & Sleek */}
+                  <div className="space-y-2.5">
+                    <label className="block text-[11px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                       Ödeme Seçenekleri
                     </label>
 
                     {/* 1. Credit Card with iyzico */}
                     <div
                       onClick={() => setPaymentMethod('iyzico')}
-                      className={`p-4 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all ${
+                      className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all ${
                         paymentMethod === 'iyzico'
-                          ? 'bg-gradient-to-br from-[#1C1C24] to-[#121217] border-[#C5A059] ring-1 ring-[#C5A059]/40 shadow-lg'
+                          ? 'bg-[#18181F] border-[#C5A059] ring-1 ring-[#C5A059]/30'
                           : 'bg-black/30 border-white/10 hover:border-white/20'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`p-2 rounded-xl ${paymentMethod === 'iyzico' ? 'bg-[#C5A059] text-black' : 'bg-white/5 text-zinc-400'}`}>
-                            <CreditCard className="w-4 h-4" />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
+                            paymentMethod === 'iyzico' ? 'border-[#C5A059] bg-[#C5A059]' : 'border-zinc-600 bg-black/40'
+                          }`}>
+                            {paymentMethod === 'iyzico' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
                           </div>
-                          <div>
-                            <span className="text-sm font-serif-luxury font-medium text-white block">
-                              Kredi / Banka Kartı (iyzico 3D Secure)
+                          <div className="min-w-0">
+                            <span className="text-xs sm:text-sm font-medium text-white block truncate">
+                              Kredi / Banka Kartı
                             </span>
-                            <span className="text-[11px] text-zinc-400 font-light">
-                              Tüm kartlara peşin veya 12 aya varan taksit imkanı
+                            <span className="text-[10px] sm:text-[11px] text-zinc-400 font-light block">
+                              Tüm kartlara peşin veya 12 aya varan taksit
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <img src="/payment/iyzico.svg" alt="iyzico" className="h-4 w-auto object-contain opacity-90" />
-                          <img src="/payment/visa.svg" alt="Visa" className="h-5 w-auto object-contain opacity-85" />
-                          <img src="/payment/mastercard.svg" alt="Mastercard" className="h-5 w-auto object-contain opacity-85" />
+                        {/* Official Logos */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <img src="/payment/iyzico-ile-ode-white.svg" alt="iyzico ile Öde" className="h-3.5 sm:h-4 w-auto object-contain opacity-95" />
+                          <img src="/payment/visa.svg" alt="Visa" className="h-3.5 sm:h-4 w-auto object-contain opacity-85" />
+                          <img src="/payment/mastercard.svg" alt="Mastercard" className="h-3.5 sm:h-4 w-auto object-contain opacity-85" />
                         </div>
                       </div>
 
                       {paymentMethod === 'iyzico' && (
-                        <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-zinc-400 space-y-1.5">
-                          <p>
-                            Siparişi Tamamla butonuna tıkladığınızda TCMB lisanslı ve PCI-DSS Seviye 1 sertifikalı <strong className="text-white">iyzico Güvenli Ödeme</strong> sayfasına yönlendirileceksiniz.
-                          </p>
-                          <div className="flex items-center gap-2 text-zinc-300 pt-1">
-                            <Shield className="w-3.5 h-3.5 text-[#C5A059]" />
-                            <span>Kart bilgileriniz asla saklanmaz, 3D Secure ve TLS güvencesiyle bankanıza iletilir.</span>
-                          </div>
+                        <div className="mt-2.5 pt-2.5 border-t border-white/10 flex items-center gap-2 text-[11px] text-zinc-300">
+                          <ShieldCheck className="w-3.5 h-3.5 text-[#C5A059] flex-shrink-0" />
+                          <span>TCMB lisanslı 256-bit SSL ve 3D Secure ile iyzico güvencesinde ödeme.</span>
                         </div>
                       )}
                     </div>
@@ -1594,50 +1697,62 @@ export const CheckoutPage: React.FC = () => {
                     {/* 2. Havale / EFT (%3 Discount) */}
                     <div
                       onClick={() => setPaymentMethod('bank_transfer')}
-                      className={`p-4 sm:p-5 rounded-2xl border text-left cursor-pointer transition-all ${
+                      className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border text-left cursor-pointer transition-all ${
                         paymentMethod === 'bank_transfer'
-                          ? 'bg-gradient-to-br from-[#1C1C24] to-[#121217] border-[#C5A059] ring-1 ring-[#C5A059]/40 shadow-lg'
+                          ? 'bg-[#18181F] border-[#C5A059] ring-1 ring-[#C5A059]/30'
                           : 'bg-black/30 border-white/10 hover:border-white/20'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`p-2 rounded-xl ${paymentMethod === 'bank_transfer' ? 'bg-[#C5A059] text-black' : 'bg-white/5 text-zinc-400'}`}>
-                            <Building2 className="w-4 h-4" />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
+                            paymentMethod === 'bank_transfer' ? 'border-[#C5A059] bg-[#C5A059]' : 'border-zinc-600 bg-black/40'
+                          }`}>
+                            {paymentMethod === 'bank_transfer' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
                           </div>
-                          <div>
-                            <span className="text-sm font-serif-luxury font-medium text-white block">
+                          <div className="min-w-0">
+                            <span className="text-xs sm:text-sm font-medium text-white block truncate">
                               Havale / EFT ile Ödeme
                             </span>
-                            <span className="text-[11px] text-zinc-400 font-light">
-                              {COMPANY.bank.bankName} kurumsal hesabımıza doğrudan transfer
+                            <span className="text-[10px] sm:text-[11px] text-zinc-400 font-light block">
+                              {COMPANY.bank.bankName} kurumsal hesabı
                             </span>
                           </div>
                         </div>
 
-                        <span className="text-[10px] bg-[#C5A059] text-black font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                          %3 Anında İndirim
+                        <span className="text-[9px] sm:text-[10px] bg-[#C5A059] text-black font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0">
+                          %3 İndirim
                         </span>
                       </div>
 
                       {paymentMethod === 'bank_transfer' && (
-                        <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-zinc-400 space-y-2">
-                          <div className="bg-black/50 p-3 rounded-xl border border-white/5 font-mono">
-                            <div className="text-emerald-400 font-semibold mb-1">
-                              ✓ %3 Nakit Havale İndirimi ({formatCurrency(paymentDiscount)}) toplamdan düşüldü!
+                        <div className="mt-2.5 pt-2.5 border-t border-white/10 space-y-2">
+                          <div className="bg-black/60 p-2.5 sm:p-3 rounded-xl border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="text-xs">
+                              <span className="text-emerald-400 font-semibold block text-[11px]">✓ %3 İndirim uygulandı (-{formatCurrency(paymentDiscount)})</span>
+                              <span className="text-zinc-200 font-mono text-[11px] block mt-0.5">{COMPANY.bank.bankName}: {COMPANY.bank.iban}</span>
+                              <span className="text-zinc-400 text-[10px]">Alıcı: {COMPANY.bank.accountHolder}</span>
                             </div>
-                            <div className="text-zinc-300">{COMPANY.bank.bankName}: {COMPANY.bank.iban}</div>
-                            <div className="text-zinc-400 text-[10px] mt-0.5">Alıcı: {COMPANY.bank.accountHolder}</div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyIban();
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-[#C5A059] hover:text-black text-[11px] text-zinc-200 transition-colors flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
+                            >
+                              {copiedIban ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                              <span>{copiedIban ? 'Kopyalandı' : 'IBAN Kopyala'}</span>
+                            </button>
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Legal Agreements & Marketing Consent */}
-                  <div className="pt-4 border-t border-white/10 space-y-3">
-                    {/* Optional Electronic Commercial Message Consent (Unchecked by default) */}
-                    <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer select-none">
+                  {/* Legal Agreements */}
+                  <div className="pt-3 border-t border-white/10 space-y-2 text-[11px] sm:text-xs">
+                    <label className="flex items-start gap-2 text-zinc-400 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         id="marketing-consent-checkbox"
@@ -1645,13 +1760,12 @@ export const CheckoutPage: React.FC = () => {
                         onChange={(e) => setMarketingConsent(e.target.checked)}
                         className="mt-0.5 rounded border-zinc-700 bg-black/50 text-[#C5A059] focus:ring-0 flex-shrink-0 cursor-pointer"
                       />
-                      <span className="leading-relaxed">
-                        Kampanya ve yeni ürün duyurularından e-posta ile haberdar olmak istiyorum. Onayımı dilediğim zaman geri çekebilirim.
+                      <span className="leading-snug">
+                        Kampanya ve yeni koleksiyon duyurularından e-posta ile haberdar olmak istiyorum.
                       </span>
                     </label>
 
-                    {/* Mandatory Contract Checkbox */}
-                    <label className="flex items-start gap-2.5 text-xs text-zinc-300 cursor-pointer select-none">
+                    <label className="flex items-start gap-2 text-zinc-300 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         id="terms-accepted-checkbox"
@@ -1659,7 +1773,7 @@ export const CheckoutPage: React.FC = () => {
                         onChange={(e) => setTermsAccepted(e.target.checked)}
                         className="mt-0.5 rounded border-zinc-700 bg-black/50 text-[#C5A059] focus:ring-0 flex-shrink-0 cursor-pointer"
                       />
-                      <span className="leading-relaxed">
+                      <span className="leading-snug">
                         <Link to="/on-bilgilendirme-formu" target="_blank" rel="noopener noreferrer" className="text-[#C5A059] underline hover:text-white font-medium">
                           Ön Bilgilendirme Formu
                         </Link>
@@ -1672,15 +1786,27 @@ export const CheckoutPage: React.FC = () => {
                     </label>
                   </div>
 
+                  {/* Mobile Payable Total Strip (Visible only on mobile before button) */}
+                  <div className="lg:hidden p-3 bg-black/40 border border-white/10 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Ödenecek Toplam Tutar</span>
+                      <span className="text-base font-serif-luxury font-bold text-[#C5A059]">{formatCurrency(finalPayableTotal)}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] text-zinc-400">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Güvenli Ödeme</span>
+                    </div>
+                  </div>
+
                   {/* Complete Order Action */}
-                  <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         setActiveTab('shipping');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                      className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 self-start sm:self-auto order-2 sm:order-1 cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                       <span>Kargo Bilgilerine Dön</span>
@@ -1691,7 +1817,7 @@ export const CheckoutPage: React.FC = () => {
                       type="button"
                       disabled={loading || !termsAccepted}
                       onClick={handlePlaceOrder}
-                      className="w-full sm:w-auto px-10 h-12 bg-[#C5A059] hover:bg-[#d6b26b] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.2em] rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer border border-[#C5A059]"
+                      className="w-full sm:w-auto px-8 h-12 bg-[#C5A059] hover:bg-[#d6b26b] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99] text-black text-xs sm:text-sm font-bold uppercase tracking-[0.15em] rounded-xl transition-all shadow-sm flex items-center justify-center gap-2.5 cursor-pointer border border-[#C5A059] order-1 sm:order-2"
                       title={paymentMethod === 'iyzico' ? "iyzico ile Güvenli Öde" : "Güvenli Ödemeyi Tamamla"}
                     >
                       {loading ? (
@@ -1700,15 +1826,18 @@ export const CheckoutPage: React.FC = () => {
                           <span className="text-black text-xs font-semibold normal-case">İşlem Yapılıyor...</span>
                         </div>
                       ) : paymentMethod === 'iyzico' ? (
-                        <img 
-                          src="/payment/iyzico-ile-ode-dark.svg" 
-                          alt="iyzico ile Öde" 
-                          className="h-5 sm:h-5.5 w-auto object-contain" 
-                        />
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src="/payment/iyzico-ile-ode-dark.svg" 
+                            alt="iyzico ile Öde" 
+                            className="h-4.5 sm:h-5 w-auto object-contain" 
+                          />
+                          <span className="text-black font-bold text-xs tracking-wider">({formatCurrency(finalPayableTotal)})</span>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <Lock className="w-4 h-4" />
-                          <span>Güvenli Ödemeyi Tamamla ({formatCurrency(finalPayableTotal)})</span>
+                          <span>Siparişi Onayla ({formatCurrency(finalPayableTotal)})</span>
                         </div>
                       )}
                     </button>
@@ -1718,8 +1847,8 @@ export const CheckoutPage: React.FC = () => {
 
             </div>
 
-            {/* RIGHT COLUMN: STICKY MODERN LUXURY ORDER SUMMARY */}
-            <div className="lg:col-span-4 sticky top-24 space-y-4">
+            {/* RIGHT COLUMN: STICKY MODERN LUXURY ORDER SUMMARY (Desktop only, mobile has top accordion) */}
+            <div className="hidden lg:block lg:col-span-4 sticky top-24 space-y-4">
               <div className="bg-[#0F0F12] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-5 shadow-xl">
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <h3 className="font-serif-luxury text-lg text-white">Sipariş Özeti</h3>
@@ -1812,9 +1941,9 @@ export const CheckoutPage: React.FC = () => {
                 <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
                   <span className="text-zinc-500">Güvenli Kart Altyapısı</span>
                   <div className="flex items-center gap-2">
-                    <img src="/payment/iyzico.svg" alt="iyzico" className="h-3.5 w-auto object-contain opacity-90" />
-                    <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-75" />
-                    <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-75" />
+                    <img src="/payment/iyzico-ile-ode-white.svg" alt="iyzico ile Öde" className="h-4 w-auto object-contain opacity-95" />
+                    <img src="/payment/visa.svg" alt="Visa" className="h-4 w-auto object-contain opacity-80" />
+                    <img src="/payment/mastercard.svg" alt="Mastercard" className="h-4 w-auto object-contain opacity-80" />
                   </div>
                 </div>
               </div>
