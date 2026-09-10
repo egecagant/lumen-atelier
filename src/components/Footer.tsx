@@ -173,6 +173,12 @@ export const Footer: React.FC<FooterProps> = () => {
                   title="Mastercard"
                   className="h-4.5 w-auto object-contain opacity-85 hover:opacity-100 transition-opacity" 
                 />
+                <img 
+                  src="/payment/troy.svg" 
+                  alt="Troy" 
+                  title="Troy"
+                  className="h-4.5 w-auto object-contain opacity-85 hover:opacity-100 transition-opacity" 
+                />
               </div>
             </div>
 

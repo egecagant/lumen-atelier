@@ -373,17 +373,7 @@ async function verifyOrderSecurity(items: any[], discountCode?: string, paymentM
       console.warn(`[verifyOrderSecurity] Firestore coupon fetch warning:`, couponErr);
     }
 
-    // Built-in store coupon fallbacks
-    if (!couponData) {
-      if (rawCouponCode === 'LUMEN10') {
-        couponData = { code: 'LUMEN10', discountType: 'percentage', discountValue: 10, active: true, description: '%10 Hoş Geldin İndirimi' };
-        couponId = 'LUMEN10';
-      } else if (rawCouponCode === 'HOSGELDIN' || rawCouponCode === 'HOSGELDIN15') {
-        couponData = { code: 'HOSGELDIN', discountType: 'percentage', discountValue: 15, active: true, description: '%15 İlk Sipariş İndirimi' };
-        couponId = 'HOSGELDIN';
-      }
-    }
-
+    // If coupon not found in Firestore, do not fall back to hardcoded codes
     if (!couponData) {
       throw new Error(`"${rawCouponCode}" indirim kodu bulunamadı veya geçerli değil.`);
     }
@@ -477,6 +467,7 @@ async function startServer() {
 
   app.use(cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or same-origin server requests)
       if (!origin) return callback(null, true);
       if (
         allowedOrigins.includes(origin) ||
@@ -487,7 +478,7 @@ async function startServer() {
       ) {
         return callback(null, true);
       }
-      return callback(null, true);
+      return callback(new Error(`CORS policy: "${origin}" is not an authorized origin.`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
@@ -550,18 +541,7 @@ async function startServer() {
         console.warn(`[Coupon Validate] Firestore query warning for "${rawCode}":`, couponErr);
       }
 
-      // Hardcoded fallback coupons if not yet seeded in Firestore
-      if (!couponData) {
-        if (rawCode === 'LUMEN10') {
-          couponData = { code: 'LUMEN10', discountType: 'percentage', discountValue: 10, active: true, description: '%10 Hoş Geldin İndirimi' };
-          couponId = 'LUMEN10';
-        } else if (rawCode === 'HOSGELDIN' || rawCode === 'HOSGELDIN15') {
-          couponData = { code: 'HOSGELDIN', discountType: 'percentage', discountValue: 15, active: true, description: '%15 İlk Sipariş İndirimi' };
-          couponId = 'HOSGELDIN';
-        }
-      }
-
-      // If coupon does not exist, return generic message without revealing code existence
+      // If coupon does not exist in Firestore, reject with generic message without revealing existence
       if (!couponData) {
         return res.json({
           success: false,
@@ -652,10 +632,28 @@ async function startServer() {
     });
   });
 
-  // Admin test email endpoint to check Resend configuration
+  // Admin test email endpoint to check Resend configuration (Protected by ADMIN_SECRET_KEY)
   app.post('/api/admin/resend/test', async (req, res) => {
     try {
-      const targetEmail = req.body?.email || 'egecagant@gmail.com';
+      const adminSecret = process.env.ADMIN_SECRET_KEY;
+      const providedKey = req.headers['x-admin-key'] || req.query.key;
+
+      if (!adminSecret || providedKey !== adminSecret) {
+        return res.status(401).json({
+          success: false,
+          message: 'Yetkisiz erişim: Bu test endpointi korumalıdır (x-admin-key gereklidir).'
+        });
+      }
+
+      const targetEmail = req.body?.email?.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!targetEmail || !emailRegex.test(targetEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Lütfen geçerli bir alıcı e-posta adresi (email) belirtin.'
+        });
+      }
+
       if (!isResendConfigured()) {
         return res.status(400).json({
           success: false,

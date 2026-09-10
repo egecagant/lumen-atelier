@@ -270,19 +270,24 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise
     // Sender email address:
     // Domain lumenlatelier.com is verified on Resend.
     const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || 'LUMEN <siparis@lumenlatelier.com>';
-    const adminNotificationEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || 'egecagant@gmail.com';
+    const adminNotificationEmail = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
 
     const htmlContent = generateOrderHtml(order);
 
     console.log(`[Resend] Sipariş onay e-postası gönderiliyor: ${customerEmail} (Sipariş #${order.id})`);
 
-    const result = await resend.emails.send({
+    const emailPayload: any = {
       from: fromEmail,
       to: [customerEmail],
-      bcc: [adminNotificationEmail],
       subject: `Siparişiniz Alındı #${order.id} - LUMEN ATELIER`,
       html: htmlContent
-    });
+    };
+
+    if (adminNotificationEmail && adminNotificationEmail.includes('@')) {
+      emailPayload.bcc = [adminNotificationEmail];
+    }
+
+    const result = await resend.emails.send(emailPayload);
 
     if (result.error) {
       console.error(`[Resend Error] E-posta gönderilemedi (${order.id}):`, result.error);

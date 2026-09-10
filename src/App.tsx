@@ -571,7 +571,9 @@ function MainApp() {
             </StoreLayout>
           }
         />
+        <Route path="/teslimat-iade" element={<Navigate to="/teslimat-ve-iade" replace />} />
         <Route path="/iade-kosullari" element={<Navigate to="/teslimat-ve-iade" replace />} />
+        <Route path="/iade" element={<Navigate to="/teslimat-ve-iade" replace />} />
         <Route path="/teslimat" element={<Navigate to="/teslimat-ve-iade" replace />} />
 
         <Route
