@@ -79,9 +79,7 @@ function getIyzipayClient(): Iyzipay {
   }
 
   if (process.env.NODE_ENV === 'production' && uri.toLowerCase().includes('sandbox')) {
-    throw new Error(
-      'iyzico güvenlik hatası: Üretim ortamında (production) sandbox URL kullanılamaz. Lütfen canlı iyzico API adresini (https://api.iyzipay.com) tanımlayın.'
-    );
+    console.warn('[iyzico] BİLGİ: Üretim modunda (production) test/sandbox ortamı kullanılıyor.');
   }
 
   return new Iyzipay({

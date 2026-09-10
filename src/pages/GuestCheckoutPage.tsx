@@ -220,10 +220,39 @@ export const GuestCheckoutPage: React.FC = () => {
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          console.error('iyzico response parse error:', parseErr);
+          if (res.status === 405) {
+            throw new Error('Ödeme sunucusu yapılandırması güncelleniyor. Lütfen Cloudflare Functions dağıtımının tamamlandığından emin olunuz.');
+          }
+          throw new Error(`Ödeme sunucusundan geçersiz yanıt alındı (${res.status}).`);
+        }
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.errorMessage || 'Ödeme oturumu başlatılamadı.');
+        if (!res.ok || !data || !data.success) {
+          throw new Error(data?.errorMessage || 'Ödeme oturumu başlatılamadı.');
+        }
+
+        try {
+          localStorage.setItem('lumen_pending_order', JSON.stringify({
+            orderId: data.orderId || `LUM-${Date.now().toString().slice(-6)}`,
+            items: payload.items,
+            address: payload.address,
+            customerName: payload.customerName,
+            customerEmail: payload.customerEmail,
+            customerPhone: payload.customerPhone,
+            total: payload.total,
+            shipping: payload.shipping,
+            subtotal: payload.subtotal,
+            discountAmount: payload.discountAmount,
+            appliedCoupon: payload.appliedCoupon,
+            token: data.token,
+            createdAt: Date.now()
+          }));
+        } catch (cacheErr) {
+          console.warn('Could not cache pending order:', cacheErr);
         }
 
         if (data.paymentPageUrl) {

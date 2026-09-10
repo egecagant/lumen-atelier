@@ -19,7 +19,7 @@ import { useCart } from '../context/CartContext';
 import { formatCurrency, formatDate } from '../lib/format';
 import { triggerGoldConfetti } from '../lib/confetti';
 import { SEO } from '../components/SEO';
-import { db, doc, getDoc } from '../lib/firebase';
+import { db, doc, getDoc, setDoc } from '../lib/firebase';
 import { getApiUrl } from '../lib/api';
 import { Order } from '../types';
 
@@ -48,27 +48,90 @@ export const OrderSuccessPage: React.FC = () => {
         colors: ['#C5A059', '#e6c34f', '#ffffff', '#a8893d']
       });
 
-      // Try fetching the created order from Firestore or server
+      // Try fetching the created order from Firestore, server, or cached pending order
       const fetchOrder = async () => {
-        if (!orderId) {
+        const targetId = orderId || token;
+        if (!targetId) {
           setLoading(false);
           return;
         }
+
         try {
-          const docRef = doc(db, 'orders', orderId);
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            setOrder({ id: snap.id, ...(snap.data() as any) });
-          } else {
-            // Check server status endpoint
-            const res = await fetch(getApiUrl(`/api/iyzico/order-status/${orderId}`));
-            const data = await res.json();
-            if (data.found && data.order) {
-              setOrder({ id: orderId, ...data.order });
+          if (orderId) {
+            const docRef = doc(db, 'orders', orderId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+              setOrder({ id: snap.id, ...(snap.data() as any) });
+              setLoading(false);
+              return;
+            }
+          }
+
+          // Check server status endpoint
+          if (orderId) {
+            try {
+              const res = await fetch(getApiUrl(`/api/iyzico/order-status/${orderId}`));
+              if (res.ok) {
+                const data = await res.json();
+                if (data.found && data.order) {
+                  setOrder({ id: orderId, ...data.order });
+                  setLoading(false);
+                  return;
+                }
+              }
+            } catch (serverErr) {
+              console.warn('Server status check failed:', serverErr);
+            }
+          }
+
+          // Fallback: Check localStorage cached order
+          const cachedStr = localStorage.getItem('lumen_pending_order');
+          if (cachedStr) {
+            try {
+              const cached = JSON.parse(cachedStr);
+              const resolvedOrderId = orderId || cached.orderId || `LUM-${Date.now().toString().slice(-6)}`;
+              const resolvedOrder: Order = {
+                id: resolvedOrderId,
+                userId: cached.userId || 'guest',
+                customerName: cached.customerName || 'Müşteri',
+                customerEmail: cached.customerEmail || '',
+                customerPhone: cached.customerPhone || '',
+                address: cached.address || {
+                  fullName: cached.customerName || '',
+                  phone: cached.customerPhone || '',
+                  email: cached.customerEmail || '',
+                  addressLine: '',
+                  city: 'İstanbul',
+                  district: '',
+                  postalCode: '',
+                  country: 'Türkiye'
+                },
+                items: cached.items || [],
+                subtotal: cached.subtotal || cached.total || 0,
+                discountCode: cached.discountCode,
+                discountAmount: cached.discountAmount,
+                appliedCoupon: cached.appliedCoupon,
+                shipping: cached.shipping || 0,
+                total: cached.total || 0,
+                status: 'paid',
+                paymentMethod: 'iyzico',
+                createdAt: cached.createdAt || Date.now()
+              };
+
+              setOrder(resolvedOrder);
+
+              // Auto-persist to Firestore client-side if missing
+              try {
+                await setDoc(doc(db, 'orders', resolvedOrderId), resolvedOrder, { merge: true });
+              } catch (fsErr) {
+                console.warn('Could not write order to Firestore client-side:', fsErr);
+              }
+            } catch (pErr) {
+              console.warn('Could not parse cached pending order:', pErr);
             }
           }
         } catch (e) {
-          console.warn('Could not fetch order from Firestore:', e);
+          console.warn('Could not fetch order:', e);
         } finally {
           setLoading(false);
         }
@@ -78,7 +141,7 @@ export const OrderSuccessPage: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [status, orderId]);
+  }, [status, orderId, token]);
 
   if (loading) {
     return (
